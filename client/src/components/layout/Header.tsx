@@ -31,6 +31,7 @@ const Header = () => {
     { name: "Products", href: "/products", isActive: location === "/products" },
     { name: "About Us", href: "/about", isActive: location === "/about" },
     { name: "Contact", href: "/contact", isActive: location === "/contact" },
+    { name: "Admin", href: "/admin", isActive: location === "/admin" },
   ];
 
   const categories: Category[] = [
