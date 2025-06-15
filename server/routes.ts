@@ -1,11 +1,15 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertContactMessageSchema } from "@shared/schema";
+import { insertContactMessageSchema, insertProductSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
+import { login, authenticateToken, verifyToken, AuthRequest } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Initialize database with sample products (only runs once)
+  await storage.initializeProducts();
+
   // API routes
   app.get("/api/products", async (req: Request, res: Response) => {
     try {
@@ -79,6 +83,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: validationError.message });
       }
       res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
+  // Auth routes
+  app.post("/api/auth/login", login);
+  app.get("/api/auth/verify", authenticateToken, verifyToken);
+
+  // Admin routes for product management (protected)
+  app.post("/api/admin/products", authenticateToken, async (req: AuthRequest, res: Response) => {
+    try {
+      const productData = insertProductSchema.parse(req.body);
+      const product = await storage.createProduct(productData);
+      res.status(201).json(product);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      res.status(500).json({ message: "Failed to create product" });
+    }
+  });
+
+  app.put("/api/admin/products/:id", authenticateToken, async (req: AuthRequest, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const productData = req.body;
+      const product = await storage.updateProduct(id, productData);
+      
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      
+      res.json(product);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update product" });
+    }
+  });
+
+  app.delete("/api/admin/products/:id", authenticateToken, async (req: AuthRequest, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteProduct(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      
+      res.json({ message: "Product deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete product" });
+    }
+  });
+
+  app.get("/api/admin/contacts", authenticateToken, async (req: AuthRequest, res: Response) => {
+    try {
+      const contacts = await storage.getContactMessages();
+      res.json(contacts);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch contact messages" });
     }
   });
 

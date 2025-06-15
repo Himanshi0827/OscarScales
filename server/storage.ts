@@ -9,6 +9,8 @@ import {
   type ContactMessage,
   type InsertContactMessage
 } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -28,100 +30,104 @@ export interface IStorage {
   // Contact message methods
   createContactMessage(message: InsertContactMessage): Promise<ContactMessage>;
   getContactMessages(): Promise<ContactMessage[]>;
+  
+  // Admin methods
+  updateProduct(id: number, data: Partial<Product>): Promise<Product | undefined>;
+  deleteProduct(id: number): Promise<boolean>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private products: Map<number, Product>;
-  private contactMessages: Map<number, ContactMessage>;
-  private currentUserId: number;
-  private currentProductId: number;
-  private currentContactMessageId: number;
-
-  constructor() {
-    this.users = new Map();
-    this.products = new Map();
-    this.contactMessages = new Map();
-    this.currentUserId = 1;
-    this.currentProductId = 1;
-    this.currentContactMessageId = 1;
-    
-    // Initialize with some product data
-    this.initializeProducts();
-  }
-
+export class DatabaseStorage implements IStorage {
   // User methods
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentUserId++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
     return user;
   }
   
   // Product methods
   async getProducts(): Promise<Product[]> {
-    return Array.from(this.products.values());
+    return await db.select().from(products);
   }
   
   async getProductById(id: number): Promise<Product | undefined> {
-    return this.products.get(id);
+    const [product] = await db.select().from(products).where(eq(products.id, id));
+    return product || undefined;
   }
   
   async getProductsByCategory(category: string): Promise<Product[]> {
-    return Array.from(this.products.values()).filter(
-      (product) => product.category === category
-    );
+    return await db.select().from(products).where(eq(products.category, category));
   }
   
   async getFeaturedProducts(): Promise<Product[]> {
-    return Array.from(this.products.values()).filter(
-      (product) => product.featured
-    );
+    return await db.select().from(products).where(eq(products.featured, true));
   }
   
   async getBestsellerProducts(): Promise<Product[]> {
-    return Array.from(this.products.values()).filter(
-      (product) => product.bestseller
-    );
+    return await db.select().from(products).where(eq(products.bestseller, true));
   }
   
   async getNewArrivalProducts(): Promise<Product[]> {
-    return Array.from(this.products.values()).filter(
-      (product) => product.new_arrival
-    );
+    return await db.select().from(products).where(eq(products.new_arrival, true));
   }
   
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
-    const id = this.currentProductId++;
-    const product: Product = { ...insertProduct, id };
-    this.products.set(id, product);
+    const [product] = await db
+      .insert(products)
+      .values(insertProduct)
+      .returning();
     return product;
   }
   
   // Contact message methods
   async createContactMessage(insertMessage: InsertContactMessage): Promise<ContactMessage> {
-    const id = this.currentContactMessageId++;
-    const message: ContactMessage = { ...insertMessage, id };
-    this.contactMessages.set(id, message);
+    const [message] = await db
+      .insert(contactMessages)
+      .values(insertMessage)
+      .returning();
     return message;
   }
   
   async getContactMessages(): Promise<ContactMessage[]> {
-    return Array.from(this.contactMessages.values());
+    return await db.select().from(contactMessages);
+  }
+  
+  // Admin methods
+  async updateProduct(id: number, data: Partial<Product>): Promise<Product | undefined> {
+    const [updatedProduct] = await db
+      .update(products)
+      .set(data)
+      .where(eq(products.id, id))
+      .returning();
+    return updatedProduct || undefined;
+  }
+  
+  async deleteProduct(id: number): Promise<boolean> {
+    const result = await db
+      .delete(products)
+      .where(eq(products.id, id))
+      .returning();
+    return result.length > 0;
   }
   
   // Initialize with sample products
-  private initializeProducts() {
+  async initializeProducts() {
+    // Check if products already exist in database
+    const existingProducts = await db.select().from(products);
+    if (existingProducts.length > 0) {
+      return; // Products already initialized
+    }
     const productData: InsertProduct[] = [
       {
         name: "Digital Body Scale",
@@ -381,10 +387,9 @@ export class MemStorage implements IStorage {
       }
     ];
     
-    productData.forEach(product => {
-      this.createProduct(product);
-    });
+    // Insert all products into database
+    await db.insert(products).values(productData);
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
