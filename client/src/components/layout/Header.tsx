@@ -16,16 +16,21 @@ type NavItem = {
   isActive: boolean;
 };
 
-type Category = {
-  name: string;
-  href: string;
+type CategoryGroup = {
+  title: string;
+  items: {
+    name: string;
+    href: string;
+    // icon: JSX.Element;
+  }[];
 };
 
 const Header = () => {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-
+  
+  
   const navItems: NavItem[] = [
     { name: "Home", href: "/", isActive: location === "/" },
     { name: "Products", href: "/products", isActive: location === "/products" },
@@ -34,13 +39,47 @@ const Header = () => {
     { name: "Admin", href: "/admin", isActive: location === "/admin" },
   ];
 
-  const categories: Category[] = [
-    { name: "Personal Scales", href: "/category/personal" },
-    { name: "Jewelry Scales", href: "/category/jewelry" },
-    { name: "Industrial Scales", href: "/category/industrial" },
-    { name: "Dairy Scales", href: "/category/dairy" },
-    { name: "Kitchen Scales", href: "/category/kitchen" },
-  ];
+const categories: CategoryGroup[] = [
+  {
+    title: "Personal & Home",
+    items: [
+      { name: "Personal Scales", href: "/category/personal-scale"},
+      { name: "Baby Scales", href: "/category/baby-scale"},
+      { name: "Kitchen Scales", href: "/category/kitchen-scale"},
+      { name: "Bowl Scales", href: "/category/bowl-scale"}
+    ],
+  },
+  {
+    title: "Industrial & Commercial",
+    items: [
+      { name: "Platform Scales", href: "/category/platform-scale"},
+      { name: "Table Top Scales", href: "/category/table-top-scale"},
+      { name: "Bench Scales", href: "/category/bench-scale"},
+      { name: "Industrial Weight Scales", href: "/category/industrial-weight-scale"},
+      { name: "Weighbridges", href: "/category/weighbridge"},
+      { name: "Pallet Weight Scales", href: "/category/pallet-weight-scale"},
+      { name: "Drum Scales", href: "/category/drum-scale"},
+      { name: "Roller Scales", href: "/category/roller-scale"},
+      { name: "Mobile Scales", href: "/category/mobile-scale"}
+    ]
+  },
+  {
+    title: "Specialized & Precision",
+    items: [
+      { name: "Jewellery Scales", href: "/category/jewellery-scale"},
+      { name: "Counting Scales", href: "/category/counting-scale"},
+      { name: "Digital Crane Scales", href: "/category/digital-crane-scale"},
+      { name: "Hanging Scales", href: "/category/hanging-scale"},
+      { name: "Laboratory Scales", href: "/category/laboratory-scale"},
+      { name: "Analytical Balances", href: "/category/analytical-balance"},
+      { name: "RRK Scales", href: "/category/rrk-scale"},
+      { name: "Coin Operated Scales", href: "/category/coin-operated-scale"},
+      { name: "Printer Scales", href: "/category/printer-scale"}
+    ]
+  }
+];
+
+  const [openGroups, setOpenGroups] = useState<boolean[]>(categories.map(() => false));
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +92,15 @@ const Header = () => {
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
+
+  const toggleGroup = (index: number) => {
+    setOpenGroups(prev => {
+      const updated = [...prev];
+      updated[index] = !updated[index];
+      return updated;
+    });
+  };
+
 
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
@@ -76,13 +124,19 @@ const Header = () => {
                       Products <span className="ml-1 text-xs">▼</span>
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-56">
-                    {categories.map((category, idx) => (
-                      <DropdownMenuItem key={idx} asChild>
-                        <Link href={category.href} className="w-full cursor-pointer">
-                          {category.name}
-                        </Link>
-                      </DropdownMenuItem>
+                  <DropdownMenuContent className="w-[700px] p-4 grid grid-cols-3 gap-4">
+                    {categories.map((group, idx) => (
+                      <div key={idx}>
+                        <h4 className="text-sm font-semibold mb-2 text-neutral-700">{group.title}</h4>
+                        {group.items.map((cat, catIdx) => (
+                          <DropdownMenuItem key={catIdx} asChild>
+                            <Link href={cat.href} className="flex items-center space-x-2 text-sm hover:text-primary transition-colors">
+                              {/* {cat.icon} */}
+                              <span>{cat.name}</span>
+                            </Link>
+                          </DropdownMenuItem>
+                        ))}
+                      </div>
                     ))}
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -150,15 +204,30 @@ const Header = () => {
               
               <div className="px-4 py-2 space-y-1">
                 <div className="font-medium mb-1">Product Categories</div>
-                {categories.map((category, idx) => (
-                  <Link 
-                    key={idx}
-                    href={category.href} 
-                    className="block pl-4 py-1 text-sm hover:bg-neutral rounded-md"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    {category.name}
-                  </Link>
+                {categories.map((group, idx) => (
+                  <div key={idx} className="px-4">
+                    <button
+                      onClick={() => toggleGroup(idx)}
+                      className="w-full text-left font-semibold py-2 text-neutral-dark"
+                    >
+                      {group.title}
+                    </button>
+                    {openGroups[idx] && (
+                      <div className="pl-4 space-y-1">
+                        {group.items.map((cat, catIdx) => (
+                          <Link
+                            key={catIdx}
+                            href={cat.href}
+                            className="flex items-center text-sm space-x-2 py-1 hover:text-primary"
+                            onClick={() => setIsMobileMenuOpen(false)}
+                          >
+                            {/* {cat.icon} */}
+                            <span>{cat.name}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
               
