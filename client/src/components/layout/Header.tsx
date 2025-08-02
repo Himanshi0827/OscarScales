@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, Menu, X, Phone } from "lucide-react";
+import { Search, Menu, X, Phone, Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -9,6 +10,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Category } from "@shared/schema";
+import { cn } from "@/lib/utils";
 
 type NavItem = {
   name: string;
@@ -16,20 +19,49 @@ type NavItem = {
   isActive: boolean;
 };
 
+type CategoryItem = {
+  name: string;
+  href: string;
+  description?: string;
+};
+
 type CategoryGroup = {
   title: string;
-  items: {
-    name: string;
-    href: string;
-    // icon: JSX.Element;
-  }[];
+  items: CategoryItem[];
+};
+
+// Function to organize categories into groups
+const organizeCategoriesByParent = (categories: Category[]): CategoryGroup[] => {
+  const groups: Record<string, CategoryItem[]> = {};
+  
+  categories.forEach(category => {
+    const parent = category.parent_category || 'root';
+    if (!groups[parent]) {
+      groups[parent] = [];
+    }
+    groups[parent].push({
+      name: category.name,
+      href: category.href,
+      description: category.description
+    });
+  });
+
+  return Object.entries(groups).map(([title, items]) => ({
+    title: title === 'root' ? 'General' : title,
+    items
+  }));
 };
 
 const Header = () => {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  
+
+  const { data: categories = [], isLoading, error } = useQuery<Category[]>({
+    queryKey: ["/api/categories"],
+  });
+
+  const categoryGroups = organizeCategoriesByParent(categories);
   
   const navItems: NavItem[] = [
     { name: "Home", href: "/", isActive: location === "/" },
@@ -38,46 +70,6 @@ const Header = () => {
     { name: "Contact", href: "/contact", isActive: location === "/contact" },
     { name: "Admin", href: "/admin", isActive: location === "/admin" },
   ];
-
-const categories: CategoryGroup[] = [
-  {
-    title: "Personal & Home",
-    items: [
-      { name: "Personal Scales", href: "/category/personal-scale"},
-      { name: "Baby Scales", href: "/category/baby-scale"},
-      { name: "Kitchen Scales", href: "/category/kitchen-scale"},
-      { name: "Bowl Scales", href: "/category/bowl-scale"}
-    ],
-  },
-  {
-    title: "Industrial & Commercial",
-    items: [
-      { name: "Platform Scales", href: "/category/platform-scale"},
-      { name: "Table Top Scales", href: "/category/table-top-scale"},
-      { name: "Bench Scales", href: "/category/bench-scale"},
-      { name: "Industrial Weight Scales", href: "/category/industrial-weight-scale"},
-      { name: "Weighbridges", href: "/category/weighbridge"},
-      { name: "Pallet Weight Scales", href: "/category/pallet-weight-scale"},
-      { name: "Drum Scales", href: "/category/drum-scale"},
-      { name: "Roller Scales", href: "/category/roller-scale"},
-      { name: "Mobile Scales", href: "/category/mobile-scale"}
-    ]
-  },
-  {
-    title: "Specialized & Precision",
-    items: [
-      { name: "Jewellery Scales", href: "/category/jewellery-scale"},
-      { name: "Counting Scales", href: "/category/counting-scale"},
-      { name: "Digital Crane Scales", href: "/category/digital-crane-scale"},
-      { name: "Hanging Scales", href: "/category/hanging-scale"},
-      { name: "Laboratory Scales", href: "/category/laboratory-scale"},
-      { name: "Analytical Balances", href: "/category/analytical-balance"},
-      { name: "RRK Scales", href: "/category/rrk-scale"},
-      { name: "Coin Operated Scales", href: "/category/coin-operated-scale"},
-      { name: "Printer Scales", href: "/category/printer-scale"}
-    ]
-  }
-];
 
   const [openGroups, setOpenGroups] = useState<boolean[]>(categories.map(() => false));
 
@@ -120,24 +112,53 @@ const categories: CategoryGroup[] = [
               item.name === "Products" ? (
                 <DropdownMenu key={index}>
                   <DropdownMenuTrigger asChild>
-                    <button className={`font-medium hover:text-primary transition-colors flex items-center ${item.isActive ? 'text-primary' : ''}`}>
-                      Products <span className="ml-1 text-xs">▼</span>
+                    <button
+                      className={cn(
+                        "font-medium transition-all flex items-center gap-1",
+                        "hover:text-primary hover:scale-105",
+                        item.isActive ? 'text-primary' : ''
+                      )}
+                    >
+                      Products
+                      <span className="ml-1 text-xs transition-transform group-hover:rotate-180">▼</span>
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent className="w-[700px] p-4 grid grid-cols-3 gap-4">
-                    {categories.map((group, idx) => (
-                      <div key={idx}>
-                        <h4 className="text-sm font-semibold mb-2 text-neutral-700">{group.title}</h4>
-                        {group.items.map((cat, catIdx) => (
-                          <DropdownMenuItem key={catIdx} asChild>
-                            <Link href={cat.href} className="flex items-center space-x-2 text-sm hover:text-primary transition-colors">
-                              {/* {cat.icon} */}
-                              <span>{cat.name}</span>
-                            </Link>
-                          </DropdownMenuItem>
-                        ))}
+                  <DropdownMenuContent
+                    className="w-[700px] p-6 grid grid-cols-3 gap-6 bg-white/95 backdrop-blur-sm shadow-lg animate-fadeIn"
+                  >
+                    {isLoading ? (
+                      <div className="col-span-3 flex justify-center items-center py-8">
+                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
                       </div>
-                    ))}
+                    ) : error ? (
+                      <div className="col-span-3 text-center text-destructive py-8">
+                        Failed to load categories
+                      </div>
+                    ) : (
+                      categoryGroups.map((group, idx) => (
+                        <div key={idx} className="space-y-3">
+                          <h4 className="text-sm font-semibold text-neutral-700 border-b pb-2">
+                            {group.title}
+                          </h4>
+                          <div className="space-y-1">
+                            {group.items.map((cat, catIdx) => (
+                              <DropdownMenuItem key={catIdx} asChild>
+                                <Link
+                                  href={cat.href}
+                                  className={cn(
+                                    "flex items-center space-x-2 text-sm rounded-md p-2",
+                                    "hover:bg-primary/5 hover:text-primary transition-colors",
+                                    "focus:bg-primary/5 focus:text-primary"
+                                  )}
+                                >
+                                  <span>{cat.name}</span>
+                                </Link>
+                              </DropdownMenuItem>
+                            ))}
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
@@ -202,33 +223,54 @@ const categories: CategoryGroup[] = [
                 </Link>
               ))}
               
-              <div className="px-4 py-2 space-y-1">
-                <div className="font-medium mb-1">Product Categories</div>
-                {categories.map((group, idx) => (
-                  <div key={idx} className="px-4">
-                    <button
-                      onClick={() => toggleGroup(idx)}
-                      className="w-full text-left font-semibold py-2 text-neutral-dark"
-                    >
-                      {group.title}
-                    </button>
-                    {openGroups[idx] && (
-                      <div className="pl-4 space-y-1">
-                        {group.items.map((cat, catIdx) => (
-                          <Link
-                            key={catIdx}
-                            href={cat.href}
-                            className="flex items-center text-sm space-x-2 py-1 hover:text-primary"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                          >
-                            {/* {cat.icon} */}
-                            <span>{cat.name}</span>
-                          </Link>
-                        ))}
-                      </div>
-                    )}
+              <div className="px-4 py-2 space-y-2">
+                <div className="font-medium mb-2 text-lg">Product Categories</div>
+                {isLoading ? (
+                  <div className="flex justify-center py-4">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
                   </div>
-                ))}
+                ) : error ? (
+                  <div className="text-center text-destructive py-4">
+                    Failed to load categories
+                  </div>
+                ) : (
+                  categoryGroups.map((group, idx) => (
+                    <div key={idx} className="bg-neutral-50 rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => toggleGroup(idx)}
+                        className={cn(
+                          "w-full text-left font-semibold p-3",
+                          "flex justify-between items-center",
+                          "hover:bg-neutral-100 transition-colors",
+                          openGroups[idx] ? "text-primary" : "text-neutral-dark"
+                        )}
+                      >
+                        {group.title}
+                        <span className={cn(
+                          "transform transition-transform",
+                          openGroups[idx] ? "rotate-180" : ""
+                        )}>▼</span>
+                      </button>
+                      {openGroups[idx] && (
+                        <div className="bg-white p-2 space-y-1 animate-fadeIn">
+                          {group.items.map((cat, catIdx) => (
+                            <Link
+                              key={catIdx}
+                              href={cat.href}
+                              className={cn(
+                                "flex items-center text-sm p-2 rounded-md",
+                                "hover:bg-primary/5 hover:text-primary transition-colors"
+                              )}
+                              onClick={() => setIsMobileMenuOpen(false)}
+                            >
+                              <span>{cat.name}</span>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
               
               <div className="relative pt-2 px-4">

@@ -24,7 +24,7 @@ const HeroSection = () => {
                 size="lg"
                 className="bg-secondary hover:bg-secondary/90 text-white font-medium"
               >
-                <Link href="#products">
+                <Link href="products">
                   Explore Products <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
