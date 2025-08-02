@@ -7,8 +7,8 @@ import { fromZodError } from "zod-validation-error";
 import { login, authenticateToken, verifyToken, AuthRequest } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Initialize database with sample products (only runs once)
-  await storage.initializeProducts();
+  // Initialize database with sample data (only runs once)
+  await storage.initializeDatabase();
 
   // API routes
   app.get("/api/products", async (req: Request, res: Response) => {
@@ -35,10 +35,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/products/category/:category", async (req: Request, res: Response) => {
+  app.get("/api/categories", async (req: Request, res: Response) => {
     try {
-      const category = req.params.category;
-      const products = await storage.getProductsByCategory(category);
+      const categories = await storage.getCategories();
+      res.json(categories);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch categories" });
+    }
+  });
+
+  app.get("/api/products/category/:slug", async (req: Request, res: Response) => {
+    try {
+      const slug = req.params.slug;
+      const products = await storage.getProductsByCategorySlug(slug);
       res.json(products);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch products" });
