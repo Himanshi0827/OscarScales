@@ -1,18 +1,39 @@
-import { 
-  users, 
-  type User, 
-  type InsertUser, 
-  products, 
-  type Product, 
+import {
+  users,
+  type User,
+  type InsertUser,
+  products,
+  type Product,
   type InsertProduct,
   contactMessages,
   type ContactMessage,
-  type InsertContactMessage
+  type InsertContactMessage,
+  categories,
+  type Category,
+  type InsertCategory,
+  productImages,
+  type ProductImage,
+  type InsertProductImage
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
+  // Category methods
+  getCategories(): Promise<Category[]>;
+  getCategoryBySlug(slug: string): Promise<Category | undefined>;
+  getCategoryById(id: number): Promise<Category | undefined>;
+  createCategory(category: InsertCategory): Promise<Category>;
+  updateCategory(id: number, data: Partial<Category>): Promise<Category | undefined>;
+  deleteCategory(id: number): Promise<boolean>;
+
+  // Product Image methods
+  getProductImages(productId: number): Promise<ProductImage[]>;
+  getPrimaryProductImage(productId: number): Promise<ProductImage | undefined>;
+  createProductImage(image: InsertProductImage): Promise<ProductImage>;
+  updateProductImage(id: number, data: Partial<ProductImage>): Promise<ProductImage | undefined>;
+  deleteProductImage(id: number): Promise<boolean>;
+
   // User methods
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -21,7 +42,8 @@ export interface IStorage {
   // Product methods
   getProducts(): Promise<Product[]>;
   getProductById(id: number): Promise<Product | undefined>;
-  getProductsByCategory(category: string): Promise<Product[]>;
+  getProductsByCategory(categoryId: number): Promise<Product[]>;
+  getProductsByCategorySlug(slug: string): Promise<Product[]>;
   getFeaturedProducts(): Promise<Product[]>;
   getBestsellerProducts(): Promise<Product[]>;
   getNewArrivalProducts(): Promise<Product[]>;
@@ -37,6 +59,99 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // Category methods
+  async getCategories(): Promise<Category[]> {
+    return await db.select().from(categories);
+  }
+
+  async getCategoryBySlug(slug: string): Promise<Category | undefined> {
+    const [category] = await db.select().from(categories).where(eq(categories.slug, slug));
+    return category || undefined;
+  }
+
+  async getCategoryById(id: number): Promise<Category | undefined> {
+    const [category] = await db.select().from(categories).where(eq(categories.id, id));
+    return category || undefined;
+  }
+
+  async createCategory(insertCategory: InsertCategory): Promise<Category> {
+    const [category] = await db
+      .insert(categories)
+      .values(insertCategory)
+      .returning();
+    return category;
+  }
+
+  async updateCategory(id: number, data: Partial<Category>): Promise<Category | undefined> {
+    const [updatedCategory] = await db
+      .update(categories)
+      .set(data)
+      .where(eq(categories.id, id))
+      .returning();
+    return updatedCategory || undefined;
+  }
+
+  async deleteCategory(id: number): Promise<boolean> {
+    const result = await db
+      .delete(categories)
+      .where(eq(categories.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  // Product Image methods
+  async getProductImages(productId: number): Promise<ProductImage[]> {
+    return await db
+      .select()
+      .from(productImages)
+      .where(eq(productImages.product_id, productId))
+      .orderBy(productImages.sort_order);
+  }
+
+  async getPrimaryProductImage(productId: number): Promise<ProductImage | undefined> {
+    const images = await db
+      .select()
+      .from(productImages)
+      .where(
+        and(
+          eq(productImages.product_id, productId),
+          eq(productImages.is_primary, true)
+        )
+      );
+    return images[0] || undefined;
+  }
+
+  async getProductsByCategorySlug(slug: string): Promise<Product[]> {
+    const category = await this.getCategoryBySlug(slug);
+    if (!category) return [];
+    return this.getProductsByCategory(category.id);
+  }
+
+  async createProductImage(insertImage: InsertProductImage): Promise<ProductImage> {
+    const [image] = await db
+      .insert(productImages)
+      .values(insertImage)
+      .returning();
+    return image;
+  }
+
+  async updateProductImage(id: number, data: Partial<ProductImage>): Promise<ProductImage | undefined> {
+    const [updatedImage] = await db
+      .update(productImages)
+      .set(data)
+      .where(eq(productImages.id, id))
+      .returning();
+    return updatedImage || undefined;
+  }
+
+  async deleteProductImage(id: number): Promise<boolean> {
+    const result = await db
+      .delete(productImages)
+      .where(eq(productImages.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
   // User methods
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -66,8 +181,8 @@ export class DatabaseStorage implements IStorage {
     return product || undefined;
   }
   
-  async getProductsByCategory(category: string): Promise<Product[]> {
-    return await db.select().from(products).where(eq(products.category, category));
+  async getProductsByCategory(categoryId: number): Promise<Product[]> {
+    return await db.select().from(products).where(eq(products.category_id, categoryId));
   }
   
   async getFeaturedProducts(): Promise<Product[]> {
@@ -121,14 +236,134 @@ export class DatabaseStorage implements IStorage {
     return result.length > 0;
   }
   
-  // Initialize with sample products
-  async initializeProducts() {
-    // Check if products already exist in database
-    const existingProducts = await db.select().from(products);
-    if (existingProducts.length > 0) {
-      return; // Products already initialized
+  // Initialize database with sample data
+  async initializeDatabase() {
+    // Check if data already exists
+    const existingCategories = await db.select().from(categories);
+    if (existingCategories.length > 0) {
+      return; // Database already initialized
     }
-    const productData: InsertProduct[] = [
+
+    // Initialize categories first
+    const categoryData: InsertCategory[] = [
+      {
+        name: "Personal Scales",
+        slug: "personal",
+        description: "Used for personal body weight tracking",
+        image: "https://i.ibb.co/9HgkXBKk/Personal-Scales.jpg",
+        href: "/category/personal",
+        title: "Personal Weighing Scales",
+        parent_category: "root"
+      },
+      {
+        name: "Jewelry Scales",
+        slug: "jewelry",
+        description: "Precision scales for jewelry and small items",
+        image: "https://i.ibb.co/VYs04sr7/Jewellery-Scales.jpg",
+        href: "/category/jewelry",
+        title: "Jewelry Weighing Scales",
+        parent_category: "root"
+      },
+      {
+        name: "Industrial Scales",
+        slug: "industrial",
+        description: "Heavy-duty scales for industrial use",
+        image: "https://i.ibb.co/bgsMDR7Z/Platform-Scales.jpg",
+        href: "/category/industrial",
+        title: "Industrial Weighing Scales",
+        parent_category: "root"
+      },
+      {
+        name: "Kitchen Scales",
+        slug: "kitchen",
+        description: "Scales for cooking and food preparation",
+        image: "https://i.ibb.co/N2JY91bm/Kitchen-Scale.jpg",
+        href: "/category/kitchen",
+        title: "Kitchen Weighing Scales",
+        parent_category: "root"
+      },
+      {
+        name: "Dairy Scales",
+        slug: "dairy",
+        description: "Specialized scales for dairy operations",
+        image: "https://i.ibb.co/rG45cVtC/Baby-Scales.jpg",
+        href: "/category/dairy",
+        title: "Dairy Weighing Scales",
+        parent_category: "root"
+      }
+    ];
+
+    const insertedCategories = await db.insert(categories).values(categoryData).returning();
+    
+    // Create a map of category slugs to IDs
+    const categoryMap = Object.fromEntries(
+      insertedCategories.map(cat => [cat.slug, cat.id])
+    );
+
+    // Define product initialization data type
+    type ProductInitData = {
+      name: string;
+      description: string;
+      price: number;
+      image: string;
+      category: string;
+      featured: boolean;
+      bestseller: boolean;
+      new_arrival: boolean;
+      accuracy: string;
+      power_supply: string;
+      display: string;
+      material: string;
+      warranty: string;
+      certification: string;
+    };
+
+    // Helper function to create product and its image
+    async function createProductWithImage(
+      db: typeof import("./db").db,
+      data: ProductInitData,
+      categoryMap: Record<string, number>
+    ) {
+      try {
+        const { image, category, ...productData } = data;
+        
+        if (!categoryMap[category]) {
+          throw new Error(`Category ${category} not found in categoryMap`);
+        }
+
+        // Insert product
+        const [insertedProduct] = await db
+          .insert(products)
+          .values({
+            ...productData,
+            category_id: categoryMap[category]
+          })
+          .returning();
+
+        if (!insertedProduct?.id) {
+          throw new Error("Failed to insert product");
+        }
+
+        // Create product image
+        await db
+          .insert(productImages)
+          .values({
+            product_id: insertedProduct.id,
+            image_url: image,
+            is_primary: true,
+            alt_text: data.name,
+            sort_order: 0
+          });
+
+        return insertedProduct;
+      } catch (error: any) {
+        console.error(`Failed to create product ${data.name}:`, error?.message || "Unknown error");
+        throw error;
+      }
+    }
+
+    // Initialize products with images
+    const productData: ProductInitData[] = [
       {
         name: "Digital Body Scale",
         description: "Advanced personal scale with BMI measurement, weight tracking, and smartphone connectivity via Bluetooth. Features a sleek design with tempered glass platform and backlit display.",
@@ -387,8 +622,16 @@ export class DatabaseStorage implements IStorage {
       }
     ];
     
-    // Insert all products into database
-    await db.insert(products).values(productData);
+    // Insert all products and their images sequentially
+    for (const product of productData) {
+      try {
+        await createProductWithImage(db, product, categoryMap);
+        console.log(`Successfully created product: ${product.name}`);
+      } catch (error) {
+        console.error(`Failed to create product ${product.name}`);
+        // Continue with next product
+      }
+    }
   }
 }
 
