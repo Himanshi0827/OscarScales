@@ -61,20 +61,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify({ username, password }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        const data = await response.json();
+        // Set token first
         localStorage.setItem('admin_token', data.token);
-        setUser(data.user);
+        
+        // Wait for state update to complete
+        await new Promise<void>(resolve => {
+          setUser(data.user);
+          // Give React time to process the state update
+          setTimeout(resolve, 100);
+        });
+
         toast({
           title: "Login successful",
           description: "Welcome to admin panel",
         });
         return true;
       } else {
-        const error = await response.json();
         toast({
           title: "Login failed",
-          description: error.message,
+          description: data.message,
           variant: "destructive",
         });
         return false;
@@ -89,9 +97,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('admin_token');
-    setUser(null);
+  const logout = async () => {
+    // Wait for state update to complete before showing toast
+    await new Promise<void>(resolve => {
+      setUser(null);
+      localStorage.removeItem('admin_token');
+      // Give React time to process the state update
+      setTimeout(resolve, 100);
+    });
+
     toast({
       title: "Logged out",
       description: "You have been logged out successfully",

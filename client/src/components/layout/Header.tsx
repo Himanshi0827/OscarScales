@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, Menu, X, Phone, Loader2, ShieldCheck } from "lucide-react";
+import { Search, Menu, X, Phone, Loader2, ShieldCheck, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -57,7 +57,7 @@ const Header = () => {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, logout, user } = useAuth();
 
   const { data: categories = [], isLoading, error } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
@@ -245,7 +245,20 @@ const Header = () => {
               </Link>
             )}
             
-            <Button 
+            {isAuthenticated && (
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  await logout();
+                }}
+                className="hidden sm:flex items-center gap-2 bg-white text-primary hover:bg-gray-100"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="text-sm">Logout</span>
+              </Button>
+            )}
+
+            <Button
               variant="ghost" 
               size="icon"
               className="md:hidden"
@@ -269,6 +282,18 @@ const Header = () => {
                   <ShieldCheck size={16} />
                   Admin Panel
                 </Link>
+              )}
+              {isAuthenticated && (
+                <button
+                  onClick={async () => {
+                    await logout();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="px-4 py-2 hover:bg-neutral rounded-md flex items-center gap-2 text-primary"
+                >
+                  <LogOut size={16} />
+                  Logout
+                </button>
               )}
               {navItems.map((item, index) => (
                 <Link 

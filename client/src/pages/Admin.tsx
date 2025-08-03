@@ -1,9 +1,19 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/useAuth";
 import { useLocation } from "wouter";
-import { Product, InsertProduct } from "@shared/schema";
+import { Product, InsertProduct, Category } from "@shared/schema";
 import { queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/useAuth";
+
+interface ExtendedProduct extends Product {
+  image?: string;
+  category?: string;
+}
+
+interface ProductFormData extends Omit<InsertProduct, 'category_id'> {
+  image?: string;
+  category?: string;
+}
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,20 +27,17 @@ import { useToast } from "@/hooks/use-toast";
 import { formatPrice } from "@/lib/data";
 
 const Admin = () => {
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  
+  // State hooks
+  const [selectedProduct, setSelectedProduct] = useState<ExtendedProduct | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
-  const { toast } = useToast();
-  const { user, logout, isAuthenticated, isLoading: authLoading } = useAuth();
-  const [, setLocation] = useLocation();
 
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      setLocation('/admin/login');
-    }
-  }, [isAuthenticated, authLoading, setLocation]);
-
+  // Helper functions
   const getAuthHeaders = () => {
     const token = localStorage.getItem('admin_token');
     return {
@@ -39,22 +46,24 @@ const Admin = () => {
     };
   };
 
-  if (authLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return null;
-  }
+  // Queries
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ["/api/categories"],
+    enabled: isAuthenticated,
+  });
 
   const { data: products = [], isLoading, refetch } = useQuery<Product[]>({
     queryKey: ["/api/products"],
+    enabled: isAuthenticated,
   });
 
+  // Create category mapping from fetched categories
+  const categoryMap = categories.reduce<Record<string, number>>((acc, cat) => {
+    acc[cat.slug] = cat.id;
+    return acc;
+  }, {});
+
+  // Mutations
   const deleteProductMutation = useMutation({
     mutationFn: async (id: number) => {
       const response = await fetch(`/api/admin/products/${id}`, {
@@ -81,11 +90,16 @@ const Admin = () => {
   });
 
   const addProductMutation = useMutation({
-    mutationFn: async (productData: InsertProduct) => {
+    mutationFn: async (productData: ProductFormData) => {
+      const { category, image, ...rest } = productData;
+      const dbData: InsertProduct = {
+        ...rest,
+        category_id: category ? categoryMap[category] : null,
+      };
       const response = await fetch("/api/admin/products", {
         method: "POST",
         headers: getAuthHeaders(),
-        body: JSON.stringify(productData),
+        body: JSON.stringify(dbData),
       });
       if (!response.ok) throw new Error('Failed to add product');
       return response.json();
@@ -108,11 +122,16 @@ const Admin = () => {
   });
 
   const updateProductMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: Partial<Product> }) => {
+    mutationFn: async ({ id, data }: { id: number; data: Partial<ProductFormData> }) => {
+      const { category, image, ...rest } = data;
+      const dbData: Partial<Product> = {
+        ...rest,
+        category_id: category ? categoryMap[category] : undefined,
+      };
       const response = await fetch(`/api/admin/products/${id}`, {
         method: "PUT",
         headers: getAuthHeaders(),
-        body: JSON.stringify(data),
+        body: JSON.stringify(dbData),
       });
       if (!response.ok) throw new Error('Failed to update product');
       return response.json();
@@ -142,12 +161,24 @@ const Admin = () => {
   };
 
   const handleEdit = (product: Product) => {
-    setSelectedProduct(product);
+    const category = categories.find(cat => cat.id === product.category_id);
+    const extendedProduct: ExtendedProduct = {
+      ...product,
+      category: category?.name || 'Uncategorized',
+      image: 'https://via.placeholder.com/400x300' // Replace with actual image URL
+    };
+    setSelectedProduct(extendedProduct);
     setIsEditModalOpen(true);
   };
 
   const handleView = (product: Product) => {
-    setSelectedProduct(product);
+    const category = categories.find(cat => cat.id === product.category_id);
+    const extendedProduct: ExtendedProduct = {
+      ...product,
+      category: category?.name || 'Uncategorized',
+      image: 'https://via.placeholder.com/400x300' // Replace with actual image URL
+    };
+    setSelectedProduct(extendedProduct);
     setIsViewModalOpen(true);
   };
 
@@ -193,6 +224,7 @@ const Admin = () => {
               <ProductForm
                 onSubmit={(data) => addProductMutation.mutate(data)}
                 isLoading={addProductMutation.isPending}
+                categories={categories}
               />
             </DialogContent>
           </Dialog>
@@ -204,14 +236,22 @@ const Admin = () => {
           </div>
         ) : (
           <div className="grid gap-6">
-            {products.map((product) => (
+            {products.map((product) => {
+              // Convert database product to extended product for UI
+              const category = categories.find(cat => cat.id === product.category_id);
+              const extendedProduct: ExtendedProduct = {
+                ...product,
+                category: category?.name || 'Uncategorized',
+                image: 'https://via.placeholder.com/400x300' // Replace with actual image URL
+              };
+              return (
               <Card key={product.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div>
                       <CardTitle className="text-lg">{product.name}</CardTitle>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Category: {product.category} | Price: {formatPrice(product.price)}
+                        Category: {extendedProduct.category} | Price: {formatPrice(product.price)}
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -263,7 +303,8 @@ const Admin = () => {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -276,13 +317,14 @@ const Admin = () => {
             {selectedProduct && (
               <ProductForm
                 initialData={selectedProduct}
-                onSubmit={(data) => 
-                  updateProductMutation.mutate({ 
-                    id: selectedProduct.id, 
-                    data 
+                onSubmit={(data) =>
+                  updateProductMutation.mutate({
+                    id: selectedProduct.id,
+                    data
                   })
                 }
                 isLoading={updateProductMutation.isPending}
+                categories={categories}
               />
             )}
           </DialogContent>
@@ -305,13 +347,14 @@ const Admin = () => {
 };
 
 interface ProductFormProps {
-  initialData?: Product;
-  onSubmit: (data: InsertProduct) => void;
+  initialData?: ExtendedProduct;
+  onSubmit: (data: ProductFormData) => void;
   isLoading: boolean;
+  categories: Category[];
 }
 
-const ProductForm = ({ initialData, onSubmit, isLoading }: ProductFormProps) => {
-  const [formData, setFormData] = useState<InsertProduct>({
+const ProductForm = ({ initialData, onSubmit, isLoading, categories }: ProductFormProps) => {
+  const [formData, setFormData] = useState<ProductFormData>({
     name: initialData?.name || "",
     description: initialData?.description || "",
     price: initialData?.price || 0,
@@ -387,11 +430,11 @@ const ProductForm = ({ initialData, onSubmit, isLoading }: ProductFormProps) => 
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="personal">Personal Scales</SelectItem>
-              <SelectItem value="jewelry">Jewelry Scales</SelectItem>
-              <SelectItem value="industrial">Industrial Scales</SelectItem>
-              <SelectItem value="dairy">Dairy Scales</SelectItem>
-              <SelectItem value="kitchen">Kitchen Scales</SelectItem>
+              {categories.map(cat => (
+                <SelectItem key={cat.id} value={cat.slug}>
+                  {cat.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -488,7 +531,7 @@ const ProductForm = ({ initialData, onSubmit, isLoading }: ProductFormProps) => 
   );
 };
 
-const ProductDetails = ({ product }: { product: Product }) => {
+const ProductDetails = ({ product }: { product: ExtendedProduct }) => {
   return (
     <div className="space-y-4">
       <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
