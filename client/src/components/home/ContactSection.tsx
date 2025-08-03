@@ -192,7 +192,7 @@ const ContactSection = () => {
                   </div>
                   <div>
                     <h4 className="font-semibold mb-1">Office Address</h4>
-                    <p>123 Main Street, Tech Park, Bangalore - 560001, Karnataka, India</p>
+                    <p>Shayona Estate, memco cross road, Naroda Rd, Ahmedabad, Gujarat 382345</p>
                   </div>
                 </div>
                 
@@ -202,8 +202,8 @@ const ContactSection = () => {
                   </div>
                   <div>
                     <h4 className="font-semibold mb-1">Phone Number</h4>
-                    <p>+91 9876543210</p>
-                    <p>+91 1234567890</p>
+                    <p>+91 9879557391</p>
+                    <p>+91 9898993857</p>
                   </div>
                 </div>
                 
@@ -213,8 +213,8 @@ const ContactSection = () => {
                   </div>
                   <div>
                     <h4 className="font-semibold mb-1">Email Address</h4>
-                    <p>sales@oscardigital.com</p>
-                    <p>support@oscardigital.com</p>
+                    <p>oscardigicompany@gmail.com</p>
+                    {/* <p>support@oscardigital.com</p> */}
                   </div>
                 </div>
                 
@@ -236,7 +236,7 @@ const ContactSection = () => {
               
               <div className="grid grid-cols-3 gap-4">
                 <a
-                  href="https://wa.me/919876543210"
+                  href="https://wa.me/919879557391"
                   className="flex flex-col items-center justify-center p-4 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
                 >
                   <FaWhatsapp className="text-2xl mb-2" />

@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertContactMessageSchema, insertProductSchema } from "@shared/schema";
+import { sendContactEmail } from "./email";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { login, authenticateToken, verifyToken, AuthRequest } from "./auth";
@@ -84,13 +85,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/contact", async (req: Request, res: Response) => {
     try {
       const contactData = insertContactMessageSchema.parse(req.body);
+      
+      // First store the message in database
       const message = await storage.createContactMessage(contactData);
+      
+      // Then send emails
+      await sendContactEmail(message);
+      
       res.status(201).json({ message: "Message sent successfully", data: message });
     } catch (error) {
       if (error instanceof ZodError) {
         const validationError = fromZodError(error);
         return res.status(400).json({ message: validationError.message });
       }
+      console.error('Contact form error:', error);
       res.status(500).json({ message: "Failed to send message" });
     }
   });
