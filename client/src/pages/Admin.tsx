@@ -30,6 +30,27 @@ const Admin = () => {
   const { user, isAuthenticated, isLoading: authLoading, logout } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+
+  // Authentication check
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      setLocation('/admin/login');
+    }
+  }, [isAuthenticated, authLoading, setLocation]);
+
+  // Loading state
+  if (authLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // Unauthenticated state
+  if (!isAuthenticated) {
+    return null;
+  }
   
   // State hooks
   const [selectedProduct, setSelectedProduct] = useState<ExtendedProduct | null>(null);
@@ -44,6 +65,11 @@ const Admin = () => {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     };
+  };
+
+  const handleLogout = () => {
+    logout();
+    setLocation('/');
   };
 
   // Queries
@@ -196,7 +222,7 @@ const Admin = () => {
               <span className="text-sm">Welcome, {user?.username}</span>
               <Button
                 variant="outline"
-                onClick={logout}
+                onClick={handleLogout}
                 className="bg-white text-primary hover:bg-gray-100"
               >
                 <LogOut className="w-4 h-4 mr-2" />
