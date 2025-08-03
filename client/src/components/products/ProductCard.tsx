@@ -1,11 +1,16 @@
 import { Link } from "wouter";
-import { Product } from "@shared/schema";
+import { Product, Category } from "@shared/schema";
 import { Star, StarHalf } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FaWhatsapp } from "react-icons/fa";
 
+interface ExtendedProduct extends Product {
+  image?: string;
+  category?: string;
+}
+
 type ProductCardProps = {
-  product: Product;
+  product: ExtendedProduct;
   onViewDetails: () => void;
 };
 
@@ -44,11 +49,11 @@ const ProductCard = ({ product, onViewDetails }: ProductCardProps) => {
   };
 
   return (
-    <div className="product-card group bg-white rounded-lg shadow-md overflow-hidden relative product-card-hover" data-category={product.category}>
+    <div className="product-card group bg-white rounded-lg shadow-md overflow-hidden relative product-card-hover">
       <div className="relative overflow-hidden">
-        <img 
-          src={product.image} 
-          alt={product.name} 
+        <img
+          src={product.image || 'https://via.placeholder.com/400x300?text=No+Image'}
+          alt={product.name}
           className="w-full h-56 object-cover transition-transform group-hover:scale-105"
         />
         {product.bestseller && (
@@ -84,10 +89,13 @@ const ProductCard = ({ product, onViewDetails }: ProductCardProps) => {
           <span className="product-price text-xl font-bold text-primary">
             {formatPrice(product.price)}
           </span>
-          <Button 
+          <Button
             size="sm"
-            className="bg-primary hover:bg-primary/90 text-white" 
-            onClick={onViewDetails}
+            className="bg-primary hover:bg-primary/90 text-white relative z-20"
+            onClick={(e) => {
+              e.stopPropagation();
+              onViewDetails();
+            }}
           >
             View Details
           </Button>
@@ -95,17 +103,19 @@ const ProductCard = ({ product, onViewDetails }: ProductCardProps) => {
       </div>
       
       {/* Quick contact options (visible on hover) */}
-      <div className="absolute bottom-0 left-0 right-0 bg-[#0f172a]/90 p-3 transform translate-y-full group-hover:translate-y-0 transition-transform">
+      <div className="absolute bottom-0 left-0 right-0 bg-[#0f172a]/90 p-3 transform translate-y-full group-hover:translate-y-0 transition-transform z-10">
         <div className="flex justify-between gap-2">
-          <a 
-            href="https://wa.me/919876543210" 
+          <a
+            href="https://wa.me/919876543210"
             className="flex-1 flex items-center justify-center bg-green-500 text-white py-1 rounded"
+            onClick={(e) => e.stopPropagation()}
           >
             <FaWhatsapp className="mr-1" /> WhatsApp
           </a>
-          <a 
-            href="tel:+919876543210" 
+          <a
+            href="tel:+919876543210"
             className="flex-1 flex items-center justify-center bg-primary text-white py-1 rounded"
+            onClick={(e) => e.stopPropagation()}
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg> Call
           </a>

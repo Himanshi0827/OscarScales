@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, Menu, X, Phone, Loader2 } from "lucide-react";
+import { Search, Menu, X, Phone, Loader2, ShieldCheck } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +57,7 @@ const Header = () => {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { isAuthenticated } = useAuth();
 
   const { data: categories = [], isLoading, error } = useQuery<Category[]>({
     queryKey: ["/api/categories"],
@@ -232,6 +234,16 @@ const Header = () => {
             <Link href="/contact" className="hidden sm:flex items-center justify-center h-10 w-10 rounded-full bg-primary text-white hover:bg-primary/90 transition-colors">
               <Phone size={16} />
             </Link>
+
+            {isAuthenticated && (
+              <Link
+                href="/admin"
+                className="hidden sm:flex items-center justify-center h-10 w-10 rounded-full bg-secondary text-white hover:bg-secondary/90 transition-colors"
+                title="Admin Panel"
+              >
+                <ShieldCheck size={16} />
+              </Link>
+            )}
             
             <Button 
               variant="ghost" 
@@ -248,6 +260,16 @@ const Header = () => {
         {isMobileMenuOpen && (
           <div className="md:hidden mt-4 pb-2">
             <div className="flex flex-col space-y-2">
+              {isAuthenticated && (
+                <Link
+                  href="/admin"
+                  className="px-4 py-2 hover:bg-neutral rounded-md flex items-center gap-2 text-secondary"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <ShieldCheck size={16} />
+                  Admin Panel
+                </Link>
+              )}
               {navItems.map((item, index) => (
                 <Link 
                   key={index}
