@@ -1,7 +1,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertContactMessageSchema, insertProductSchema } from "@shared/schema";
+import { insertContactMessageSchema, insertProductSchema, insertCategorySchema, insertCategoryImageSchema } from "@shared/schema";
 import { sendContactEmail } from "./email";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -42,6 +42,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(categories);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch categories" });
+    }
+  });
+
+  // Category Management Routes (Protected)
+  app.post("/api/admin/categories", authenticateToken, async (req: AuthRequest, res: Response) => {
+    try {
+      const categoryData = insertCategorySchema.parse(req.body);
+      const category = await storage.createCategory(categoryData);
+      res.status(201).json(category);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      res.status(500).json({ message: "Failed to create category" });
+    }
+  });
+
+  app.put("/api/admin/categories/:id", authenticateToken, async (req: AuthRequest, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const categoryData = req.body;
+      const category = await storage.updateCategory(id, categoryData);
+      
+      if (!category) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      
+      res.json(category);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update category" });
+    }
+  });
+
+  app.delete("/api/admin/categories/:id", authenticateToken, async (req: AuthRequest, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteCategory(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Category not found" });
+      }
+      
+      res.json({ message: "Category deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete category" });
+    }
+  });
+
+  // Category Image Management Routes (Protected)
+  app.get("/api/admin/categories/:id/images", authenticateToken, async (req: AuthRequest, res: Response) => {
+    try {
+      const categoryId = parseInt(req.params.id);
+      const images = await storage.getCategoryImages(categoryId);
+      res.json(images);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch category images" });
+    }
+  });
+
+  app.post("/api/admin/categories/:id/images", authenticateToken, async (req: AuthRequest, res: Response) => {
+    try {
+      const categoryId = parseInt(req.params.id);
+      const imageData = insertCategoryImageSchema.parse({
+        ...req.body,
+        category_id: categoryId
+      });
+      const image = await storage.createCategoryImage(imageData);
+      res.status(201).json(image);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      res.status(500).json({ message: "Failed to create category image" });
+    }
+  });
+
+  app.put("/api/admin/categories/images/:id", authenticateToken, async (req: AuthRequest, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const imageData = req.body;
+      const image = await storage.updateCategoryImage(id, imageData);
+      
+      if (!image) {
+        return res.status(404).json({ message: "Category image not found" });
+      }
+      
+      res.json(image);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update category image" });
+    }
+  });
+
+  app.delete("/api/admin/categories/images/:id", authenticateToken, async (req: AuthRequest, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteCategoryImage(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Category image not found" });
+      }
+      
+      res.json({ message: "Category image deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete category image" });
     }
   });
 

@@ -9,6 +9,7 @@ export async function runMigrations() {
     console.log("Dropping existing tables...");
     const dropTables = [
       sql`DROP TABLE IF EXISTS product_images CASCADE`,
+      sql`DROP TABLE IF EXISTS category_images CASCADE`,
       sql`DROP TABLE IF EXISTS products CASCADE`,
       sql`DROP TABLE IF EXISTS categories CASCADE`
     ];
@@ -25,10 +26,18 @@ export async function runMigrations() {
         name TEXT NOT NULL,
         slug TEXT NOT NULL UNIQUE,
         description TEXT NOT NULL,
-        image TEXT NOT NULL,
         href TEXT NOT NULL,
         title TEXT NOT NULL,
         parent_category TEXT DEFAULT 'root'
+      )`,
+
+      sql`CREATE TABLE IF NOT EXISTS category_images (
+        id SERIAL PRIMARY KEY,
+        category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+        image_url TEXT NOT NULL,
+        is_primary BOOLEAN DEFAULT false,
+        alt_text TEXT,
+        sort_order INTEGER DEFAULT 0
       )`,
 
       sql`CREATE TABLE IF NOT EXISTS products (

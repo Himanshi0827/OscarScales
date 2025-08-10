@@ -1,0 +1,40 @@
+{
+  "categories": [
+    {
+      "name": "Industrial Scales",
+      "slug": "industrial-scales",
+      "description": "High-capacity scales for industrial and manufacturing use",
+      "image": "/images/categories/industrial-scales.jpg",
+      "href": "/categories/industrial-scales",
+      "title": "Industrial Weighing Solutions",
+      "parent_category": "root"
+    },
+    {
+      "name": "Laboratory Scales",
+      "slug": "laboratory-scales",
+      "description": "Precision scales for laboratory and research applications",
+      "image": "/images/categories/laboratory-scales.jpg",
+      "href": "/categories/laboratory-scales",
+      "title": "Laboratory Precision Instruments",
+      "parent_category": "root"
+    },
+    {
+      "name": "Retail Scales",
+      "slug": "retail-scales",
+      "description": "Commercial scales for retail and point-of-sale use",
+      "image": "/images/categories/retail-scales.jpg",
+      "href": "/categories/retail-scales",
+      "title": "Retail Weighing Equipment",
+      "parent_category": "root"
+    },
+    {
+      "name": "Platform Scales",
+      "slug": "platform-scales",
+      "description": "Versatile platform scales for various weighing needs",
+      "image": "/images/categories/platform-scales.jpg",
+      "href": "/categories/platform-scales",
+      "title": "Platform Weighing Solutions",
+      "parent_category": "Industrial Scales"
+    }
+  ]
+}
