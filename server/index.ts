@@ -3,6 +3,10 @@ import { config } from "dotenv";
 config();
 
 import express, { type Request, Response, NextFunction } from "express";
+import { initImgBBService } from "./imgbb.js";
+
+// Initialize ImgBB service with environment variables
+initImgBBService();
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { runMigrations } from "./migrations";

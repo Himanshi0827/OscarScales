@@ -2,7 +2,7 @@ import { pgTable, text, serial, integer, boolean, varchar, foreignKey } from "dr
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// User schema (keeping from original)
+// User schema
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
@@ -20,13 +20,31 @@ export const categories = pgTable("categories", {
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
   description: text("description").notNull(),
-  image: text("image").notNull(),
   href: text("href").notNull(),
   title: text("title").notNull(),
   parent_category: text("parent_category").default("root"),
 });
 
 export const insertCategorySchema = createInsertSchema(categories).omit({
+  id: true,
+});
+
+// Category Images schema
+export const categoryImages = pgTable("category_images", {
+  id: serial("id").primaryKey(),
+  category_id: integer("category_id")
+    .notNull()
+    .references(() => categories.id, { onDelete: "cascade" }),
+  image_url: text("image_url").notNull(),
+  display_url: text("display_url").notNull(),
+  thumb_url: text("thumb_url").notNull(),
+  delete_url: text("delete_url").notNull(),
+  is_primary: boolean("is_primary").default(false),
+  alt_text: text("alt_text"),
+  sort_order: integer("sort_order").default(0),
+});
+
+export const insertCategoryImageSchema = createInsertSchema(categoryImages).omit({
   id: true,
 });
 
@@ -37,6 +55,9 @@ export const productImages = pgTable("product_images", {
     .notNull()
     .references(() => products.id, { onDelete: "cascade" }),
   image_url: text("image_url").notNull(),
+  display_url: text("display_url").notNull(),
+  thumb_url: text("thumb_url").notNull(),
+  delete_url: text("delete_url").notNull(),
   is_primary: boolean("is_primary").default(false),
   alt_text: text("alt_text"),
   sort_order: integer("sort_order").default(0),
@@ -89,6 +110,9 @@ export type User = typeof users.$inferSelect;
 
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type Category = typeof categories.$inferSelect;
+
+export type InsertCategoryImage = z.infer<typeof insertCategoryImageSchema>;
+export type CategoryImage = typeof categoryImages.$inferSelect;
 
 export type InsertProductImage = z.infer<typeof insertProductImageSchema>;
 export type ProductImage = typeof productImages.$inferSelect;
