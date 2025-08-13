@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,14 +19,18 @@ const ImageUpload = ({
   existingImages = [],
   onExistingImageRemove,
 }: ImageUploadProps) => {
-  const [selectedImages, setSelectedImages] = useState<ImageData[]>([]);
+  const [selectedImages, setSelectedImages] = useState<ImageData[]>(existingImages || []);
+
+  useEffect(() => {
+    setSelectedImages(existingImages || []);
+  }, [existingImages]);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-    const totalImages = existingImages.length + selectedImages.length + files.length;
+    const totalImages = selectedImages.length + files.length;
 
     if (totalImages > maxImages) {
       toast({
@@ -45,17 +49,18 @@ const ImageUpload = ({
         const imageData = await uploadToImgBB(file, `image-${Date.now()}-${index}`);
         return {
           ...imageData,
-          is_primary: index === 0 && selectedImages.length === 0 && existingImages.length === 0,
+          is_primary: index === 0 && selectedImages.length === 0,
           sort_order: selectedImages.length + index,
+          alt_text: `Image ${selectedImages.length + index + 1}`
         };
       });
 
       const uploadedImages = await Promise.all(uploadPromises);
 
       // Update selected images
-      const newSelectedImages = [...selectedImages, ...uploadedImages];
-      setSelectedImages(newSelectedImages);
-      onImagesChange(newSelectedImages);
+      const newImages = [...selectedImages, ...uploadedImages];
+      setSelectedImages(newImages);
+      onImagesChange(newImages);
 
       toast({
         title: "Success",
@@ -112,7 +117,7 @@ const ImageUpload = ({
           {isUploading ? 'Uploading...' : 'Select Images'}
         </Label>
         <span className="text-sm text-gray-500">
-          {maxImages - (existingImages.length + selectedImages.length)} images remaining
+          {maxImages - existingImages.length} images remaining
         </span>
       </div>
 

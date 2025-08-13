@@ -353,6 +353,28 @@ const CategoryForm = ({ initialData, onSubmit, isLoading }: CategoryFormProps) =
     parent_category: initialData?.parent_category || "root",
   });
 
+  const generateSlugAndHref = (name: string) => {
+    const slug = name.toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+    return {
+      slug,
+      href: `/categories/${slug}`,
+      title: name
+    };
+  };
+
+  const handleNameChange = (name: string) => {
+    const { slug, href, title } = generateSlugAndHref(name);
+    setFormData(prev => ({
+      ...prev,
+      name,
+      slug,
+      href,
+      title
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
@@ -364,25 +386,14 @@ const CategoryForm = ({ initialData, onSubmit, isLoading }: CategoryFormProps) =
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="name">Category Name</Label>
-          <Input
-            id="name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            required
-          />
-        </div>
-        <div>
-          <Label htmlFor="slug">Slug</Label>
-          <Input
-            id="slug"
-            value={formData.slug}
-            onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-            required
-          />
-        </div>
+      <div>
+        <Label htmlFor="name">Category Name</Label>
+        <Input
+          id="name"
+          value={formData.name}
+          onChange={(e) => handleNameChange(e.target.value)}
+          required
+        />
       </div>
 
       <div>
@@ -395,26 +406,6 @@ const CategoryForm = ({ initialData, onSubmit, isLoading }: CategoryFormProps) =
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="href">URL Path</Label>
-          <Input
-            id="href"
-            value={formData.href}
-            onChange={(e) => setFormData({ ...formData, href: e.target.value })}
-            required
-          />
-        </div>
-        <div>
-          <Label htmlFor="title">Title</Label>
-          <Input
-            id="title"
-            value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            required
-          />
-        </div>
-      </div>
 
       <div>
         <Label htmlFor="parent_category">Parent Category</Label>

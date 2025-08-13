@@ -35,6 +35,9 @@ export async function runMigrations() {
         id SERIAL PRIMARY KEY,
         category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
         image_url TEXT NOT NULL,
+        display_url TEXT NOT NULL,
+        thumb_url TEXT NOT NULL,
+        delete_url TEXT NOT NULL,
         is_primary BOOLEAN DEFAULT false,
         alt_text TEXT,
         sort_order INTEGER DEFAULT 0
@@ -61,6 +64,9 @@ export async function runMigrations() {
         id SERIAL PRIMARY KEY,
         product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
         image_url TEXT NOT NULL,
+        display_url TEXT NOT NULL,
+        thumb_url TEXT NOT NULL,
+        delete_url TEXT NOT NULL,
         is_primary BOOLEAN DEFAULT false,
         alt_text TEXT,
         sort_order INTEGER DEFAULT 0

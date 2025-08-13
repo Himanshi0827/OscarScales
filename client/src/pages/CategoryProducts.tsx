@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Helmet } from "react-helmet";
-import { Product } from "@shared/schema";
+import { Product, Category } from "@shared/schema";
 import ProductCard from "@/components/products/ProductCard";
 import ProductModal from "@/components/products/ProductModal";
 import {
@@ -13,42 +13,26 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const getCategoryName = (slug: string) => {
-  const categories: Record<string, string> = {
-    personal: "Personal Scales",
-    jewelry: "Jewelry Scales",
-    industrial: "Industrial Scales",
-    dairy: "Dairy Scales",
-    kitchen: "Kitchen Scales",
-  };
-  
-  return categories[slug] || "Products";
-};
-
-const getCategoryDescription = (slug: string) => {
-  const descriptions: Record<string, string> = {
-    personal: "Accurate and stylish scales for monitoring body weight and composition.",
-    jewelry: "High-precision scales for measuring precious metals and gemstones.",
-    industrial: "Heavy-duty weighing solutions for warehouses, factories, and logistics operations.",
-    dairy: "Specialized scales for milk collection and dairy product measurement.",
-    kitchen: "Compact and precise scales for cooking, baking, and food preparation.",
-  };
-  
-  return descriptions[slug] || "Explore our range of quality weighing solutions.";
-};
-
 const CategoryProducts = () => {
-  const params = useParams<{ category: string }>();
+  const params = useParams<{ slug: string }>();
   const [sortBy, setSortBy] = useState("featured");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  const categoryName = getCategoryName(params.category);
-  const categoryDescription = getCategoryDescription(params.category);
 
-  const { data: products = [], isLoading } = useQuery<Product[]>({
-    queryKey: [`/api/products/category/${params.category}`],
+  // Fetch category data
+  const { data: categories = [], isLoading: isCategoryLoading } = useQuery<(Category & { image: string | null })[]>({
+    queryKey: ["/api/categories"],
   });
+
+  const category = categories.find(c => c.slug === params.slug);
+
+  // Fetch products for the category
+  const { data: products = [], isLoading: isProductsLoading } = useQuery<Product[]>({
+    queryKey: [`/api/products/category/${params.slug}`],
+    enabled: !!params.slug,
+  });
+
+  const isLoading = isCategoryLoading || isProductsLoading;
 
   const handleProductClick = (product: Product) => {
     setSelectedProduct(product);
@@ -79,15 +63,15 @@ const CategoryProducts = () => {
   return (
     <>
       <Helmet>
-        <title>{categoryName} - Oscar Digital System</title>
-        <meta name="description" content={categoryDescription} />
+        <title>{category?.name || "Category"} - Oscar Digital System</title>
+        <meta name="description" content={category?.description || ""} />
       </Helmet>
       
       <div className="bg-gradient-primary text-white py-12">
         <div className="container mx-auto px-4">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">{categoryName}</h1>
+          <h1 className="text-3xl md:text-4xl font-bold mb-4">{category?.name || "Loading..."}</h1>
           <p className="text-lg max-w-3xl">
-            {categoryDescription}
+            {category?.description || "Loading..."}
           </p>
         </div>
       </div>

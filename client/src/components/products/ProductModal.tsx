@@ -1,13 +1,102 @@
-import { 
-  Dialog, 
-  DialogContent, 
+import { useState, useEffect } from "react";
+import {
+  Dialog,
+  DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Product } from "@shared/schema";
+import { Product, ProductImage } from "@shared/schema";
 import { Star, StarHalf, X } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
+import { useQuery } from "@tanstack/react-query";
+
+const ProductImages = ({ productId }: { productId: number }) => {
+  const { data: images = [] } = useQuery<ProductImage[]>({
+    queryKey: [`/api/products/${productId}/images`],
+  });
+
+  const [selectedImage, setSelectedImage] = useState<ProductImage | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  useEffect(() => {
+    if (images.length > 0) {
+      const primaryImage = images.find(img => img.is_primary);
+      setSelectedImage(primaryImage || images[0]);
+      setSelectedIndex(primaryImage ? images.indexOf(primaryImage) : 0);
+    }
+  }, [images]);
+
+  const handlePrevImage = () => {
+    if (images.length > 0) {
+      const newIndex = (selectedIndex - 1 + images.length) % images.length;
+      setSelectedIndex(newIndex);
+      setSelectedImage(images[newIndex]);
+    }
+  };
+
+  const handleNextImage = () => {
+    if (images.length > 0) {
+      const newIndex = (selectedIndex + 1) % images.length;
+      setSelectedIndex(newIndex);
+      setSelectedImage(images[newIndex]);
+    }
+  };
+
+  if (!selectedImage) {
+    return (
+      <div className="w-full h-64 bg-gray-200 rounded-lg flex items-center justify-center">
+        <span className="text-gray-500">No images available</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <img
+        src={selectedImage.display_url || selectedImage.image_url}
+        alt={selectedImage.alt_text || "Product image"}
+        className="w-full h-[400px] object-cover rounded-lg"
+      />
+      
+      {/* Navigation arrows */}
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={handlePrevImage}
+            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+          <button
+            onClick={handleNextImage}
+            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+        </>
+      )}
+
+      {/* Thumbnail navigation */}
+      <div className="grid grid-cols-5 gap-2 mt-4">
+        {images.map((image, index) => (
+          <img
+            key={image.id}
+            src={image.thumb_url || image.image_url}
+            alt={image.alt_text || `Product image ${index + 1}`}
+            className={`w-full h-20 object-cover rounded cursor-pointer border-2 transition-colors ${
+              selectedImage.id === image.id ? 'border-primary' : 'border-transparent hover:border-primary/50'
+            }`}
+            onClick={() => {
+              setSelectedImage(image);
+              setSelectedIndex(index);
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
 
 type ProductModalProps = {
   product: Product;
@@ -62,24 +151,7 @@ const ProductModal = ({ product, isOpen, onClose }: ProductModalProps) => {
         </DialogHeader>
         
         <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <img 
-              src={product.image} 
-              alt={product.name} 
-              className="w-full h-auto object-cover rounded-lg"
-            />
-            <div className="grid grid-cols-4 gap-2 mt-4">
-              <img 
-                src={product.image} 
-                alt="Thumbnail" 
-                className="w-full h-20 object-cover rounded cursor-pointer border-2 border-primary"
-              />
-              {/* Placeholder thumbnails - in a real app these would be additional product images */}
-              <div className="w-full h-20 rounded cursor-pointer opacity-60 hover:opacity-100 bg-gray-200"></div>
-              <div className="w-full h-20 rounded cursor-pointer opacity-60 hover:opacity-100 bg-gray-200"></div>
-              <div className="w-full h-20 rounded cursor-pointer opacity-60 hover:opacity-100 bg-gray-200"></div>
-            </div>
-          </div>
+          <ProductImages productId={product.id} />
           
           <div>
             <h2 className="text-2xl font-bold mb-2">{product.name}</h2>

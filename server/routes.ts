@@ -1,11 +1,28 @@
 import type { Express, Request, Response } from "express";
+import type { Request as MulterRequest } from "express-serve-static-core";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertContactMessageSchema, insertProductSchema, insertCategorySchema, insertCategoryImageSchema } from "@shared/schema";
+import {
+  insertContactMessageSchema,
+  insertProductSchema,
+  insertCategorySchema,
+  insertCategoryImageSchema,
+  insertProductImageSchema
+} from "@shared/schema";
 import { sendContactEmail } from "./email";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { login, authenticateToken, verifyToken, AuthRequest } from "./auth";
+import multer from "multer";
+import { getImgBBService } from "./imgbb";
+
+// Configure multer for handling file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Initialize database with sample data (only runs once)
@@ -15,7 +32,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/products", async (req: Request, res: Response) => {
     try {
       const products = await storage.getProducts();
-      res.json(products);
+      
+      // Fetch primary image for each product
+      const productsWithImages = await Promise.all(
+        products.map(async (product) => {
+          const primaryImage = await storage.getPrimaryProductImage(product.id);
+          return {
+            ...product,
+            image: primaryImage?.display_url || null
+          };
+        })
+      );
+      
+      res.json(productsWithImages);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch products" });
     }
@@ -29,8 +58,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!product) {
         return res.status(404).json({ message: "Product not found" });
       }
+
+      // Get product images
+      const images = await storage.getProductImages(id);
       
-      res.json(product);
+      res.json({
+        ...product,
+        images: images
+      });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch product" });
     }
@@ -39,8 +74,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/categories", async (req: Request, res: Response) => {
     try {
       const categories = await storage.getCategories();
-      res.json(categories);
+      
+      // Fetch images for each category
+      const categoriesWithImages = await Promise.all(
+        categories.map(async (category) => {
+          const images = await storage.getCategoryImages(category.id);
+          const primaryImage = images.find(img => img.is_primary) || images[0];
+          return {
+            ...category,
+            image: primaryImage?.display_url || null
+          };
+        })
+      );
+      
+      res.json(categoriesWithImages);
     } catch (error) {
+      console.error("Error fetching categories:", error);
       res.status(500).json({ message: "Failed to fetch categories" });
     }
   });
@@ -95,9 +144,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/admin/categories/:id/images", authenticateToken, async (req: AuthRequest, res: Response) => {
     try {
       const categoryId = parseInt(req.params.id);
+      if (isNaN(categoryId)) {
+        return res.status(400).json({ message: "Invalid category ID" });
+      }
       const images = await storage.getCategoryImages(categoryId);
       res.json(images);
     } catch (error) {
+      console.error("Error fetching category images:", error);
       res.status(500).json({ message: "Failed to fetch category images" });
     }
   });
@@ -259,12 +312,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Product Image Management Routes
+  app.get("/api/products/:id/images", async (req: Request, res: Response) => {
+    try {
+      const productId = parseInt(req.params.id);
+      if (isNaN(productId)) {
+        return res.status(400).json({ message: "Invalid product ID" });
+      }
+      const images = await storage.getProductImages(productId);
+      res.json(images);
+    } catch (error) {
+      console.error("Error fetching product images:", error);
+      res.status(500).json({ message: "Failed to fetch product images" });
+    }
+  });
+
+  app.post("/api/admin/products/:id/images", authenticateToken, async (req: AuthRequest, res: Response) => {
+    try {
+      const productId = parseInt(req.params.id);
+      const imageData = insertProductImageSchema.parse({
+        ...req.body,
+        product_id: productId
+      });
+      const image = await storage.createProductImage(imageData);
+      res.status(201).json(image);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      console.error("Error creating product image:", error);
+      res.status(500).json({ message: "Failed to create product image" });
+    }
+  });
+
+  app.put("/api/admin/products/images/:id", authenticateToken, async (req: AuthRequest, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const imageData = req.body;
+      const image = await storage.updateProductImage(id, imageData);
+      
+      if (!image) {
+        return res.status(404).json({ message: "Product image not found" });
+      }
+      
+      res.json(image);
+    } catch (error) {
+      console.error("Error updating product image:", error);
+      res.status(500).json({ message: "Failed to update product image" });
+    }
+  });
+
+  app.delete("/api/admin/products/images/:id", authenticateToken, async (req: AuthRequest, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      const success = await storage.deleteProductImage(id);
+      
+      if (!success) {
+        return res.status(404).json({ message: "Product image not found" });
+      }
+      
+      res.json({ message: "Product image deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting product image:", error);
+      res.status(500).json({ message: "Failed to delete product image" });
+    }
+  });
+
   app.get("/api/admin/contacts", authenticateToken, async (req: AuthRequest, res: Response) => {
     try {
       const contacts = await storage.getContactMessages();
       res.json(contacts);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch contact messages" });
+    }
+  });
+
+  // Image upload routes
+  app.post("/api/upload", upload.single("image"), async (req: MulterRequest, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No image file provided" });
+      }
+
+      const imgbb = getImgBBService();
+      const base64Image = req.file.buffer.toString("base64");
+      const response = await imgbb.uploadImage(base64Image, req.file.originalname);
+
+      res.json(response);
+    } catch (error) {
+      console.error("Image upload error:", error);
+      res.status(500).json({ message: "Failed to upload image" });
+    }
+  });
+
+  app.post("/api/delete-image", async (req: Request, res: Response) => {
+    try {
+      const { deleteUrl } = req.body;
+      if (!deleteUrl) {
+        return res.status(400).json({ message: "No delete URL provided" });
+      }
+
+      const imgbb = getImgBBService();
+      const success = await imgbb.deleteImage(deleteUrl);
+
+      if (success) {
+        res.json({ message: "Image deleted successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to delete image" });
+      }
+    } catch (error) {
+      console.error("Image deletion error:", error);
+      res.status(500).json({ message: "Failed to delete image" });
     }
   });
 

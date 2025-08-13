@@ -1,6 +1,24 @@
 import { Link } from "wouter";
-import { Product, Category } from "@shared/schema";
+import { Product, Category, ProductImage as ProductImageType } from "@shared/schema";
 import { Star, StarHalf } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+
+// Component to handle product image display
+const ProductImage = ({ productId }: { productId: number }) => {
+  const { data: images = [] } = useQuery<ProductImageType[]>({
+    queryKey: [`/api/products/${productId}/images`],
+  });
+
+  const primaryImage = images.find(img => img.is_primary) || images[0];
+  
+  return (
+    <img
+      src={primaryImage?.display_url || 'https://via.placeholder.com/400x300?text=No+Image'}
+      alt="Product image"
+      className="w-full h-56 object-cover transition-transform group-hover:scale-105"
+    />
+  );
+};
 import { Button } from "@/components/ui/button";
 import { FaWhatsapp } from "react-icons/fa";
 
@@ -51,11 +69,7 @@ const ProductCard = ({ product, onViewDetails }: ProductCardProps) => {
   return (
     <div className="product-card group bg-white rounded-lg shadow-md overflow-hidden relative product-card-hover">
       <div className="relative overflow-hidden">
-        <img
-          src={product.image || 'https://via.placeholder.com/400x300?text=No+Image'}
-          alt={product.name}
-          className="w-full h-56 object-cover transition-transform group-hover:scale-105"
-        />
+        <ProductImage productId={product.id} />
         {product.bestseller && (
           <div className="absolute top-3 left-3">
             <span className="bg-secondary text-white text-xs px-2 py-1 rounded-full">

@@ -190,10 +190,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProductImage(insertImage: InsertProductImage): Promise<ProductImage> {
+    // If this is a primary image, unset primary flag on all other images
+    if (insertImage.is_primary) {
+      await db
+        .update(productImages)
+        .set({ is_primary: false })
+        .where(eq(productImages.product_id, insertImage.product_id));
+    }
+
+    // Get current max sort order for this product
+    const existingImages = await this.getProductImages(insertImage.product_id);
+    const maxSortOrder = Math.max(...existingImages.map(img => img.sort_order || 0), -1);
+
+    // Set sort order if not provided
+    const imageToInsert = {
+      ...insertImage,
+      sort_order: insertImage.sort_order ?? maxSortOrder + 1
+    };
+
+    // Insert the new image
     const [image] = await db
       .insert(productImages)
-      .values(insertImage)
+      .values(imageToInsert)
       .returning();
+
     return image;
   }
 

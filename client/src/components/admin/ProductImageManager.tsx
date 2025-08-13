@@ -89,50 +89,79 @@ const ProductImageManager = ({ productId, getAuthHeaders }: ProductImageManagerP
     },
   });
 
-  const handleImagesChange = (newImages: ImageData[]) => {
-    // Create product images from ImgBB data
-    const createImages = async () => {
-      for (const image of newImages) {
-        try {
-          const response = await fetch(`/api/admin/products/${productId}/images`, {
-            method: 'POST',
-            headers: {
-              ...getAuthHeaders(),
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              image_url: image.image_url,
-              display_url: image.display_url,
-              thumb_url: image.thumb_url,
-              delete_url: image.delete_url,
-              is_primary: image.is_primary,
-              alt_text: image.alt_text,
-              sort_order: image.sort_order || images.length,
-            }),
-          });
-
-          if (!response.ok) {
-            throw new Error('Failed to create product image');
-          }
-        } catch (error) {
-          console.error('Failed to create product image:', error);
-          toast({
-            title: "Error",
-            description: "Failed to save image",
-            variant: "destructive",
-          });
+  const handleImagesChange = async (newImages: ImageData[]) => {
+    const uploadPromises = newImages.map(async (image) => {
+      try {
+        // Check if image already exists
+        const existingImage = images.find(img =>
+          img.image_url === image.image_url ||
+          img.display_url === image.display_url
+        );
+        
+        if (existingImage) {
+          return existingImage;
         }
+
+        // First ensure we have valid image data
+        if (!image.image_url || !image.display_url || !image.thumb_url || !image.delete_url) {
+          throw new Error('Invalid image data received from ImgBB');
+        }
+
+        const response = await fetch(`/api/admin/products/${productId}/images`, {
+          method: 'POST',
+          headers: {
+            ...getAuthHeaders(),
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            image_url: image.image_url,
+            display_url: image.display_url,
+            thumb_url: image.thumb_url,
+            delete_url: image.delete_url,
+            is_primary: image.is_primary || false,
+            alt_text: image.alt_text || `Product image ${images.length + 1}`,
+            sort_order: image.sort_order || images.length,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          throw new Error(errorData?.message || 'Failed to create product image');
+        }
+
+        const data = await response.json();
+        return data;
+      } catch (error: any) {
+        console.error('Failed to create product image:', error);
+        toast({
+          title: "Error",
+          description: `Failed to save image: ${error?.message || 'Unknown error'}`,
+          variant: "destructive",
+        });
+        // Return null to indicate failure but allow other uploads to continue
+        return null;
       }
+    });
 
-      // Refresh images
-      queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/images`] });
+    try {
+      const results = await Promise.all(uploadPromises);
+      const successfulUploads = results.filter(Boolean);
+
+      if (successfulUploads.length > 0) {
+        queryClient.invalidateQueries({ queryKey: [`/api/products/${productId}/images`] });
+        toast({
+          title: "Success",
+          description: `Successfully uploaded ${successfulUploads.length} image${successfulUploads.length > 1 ? 's' : ''}`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Failed to process images:', error);
       toast({
-        title: "Success",
-        description: "Images uploaded successfully",
+        title: "Error",
+        description: `Failed to process images: ${error?.message || 'Unknown error'}`,
+        variant: "destructive",
       });
-    };
-
-    createImages();
+    }
   };
 
   const handleDelete = (image: ProductImage) => {

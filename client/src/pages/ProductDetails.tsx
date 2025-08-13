@@ -1,19 +1,27 @@
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useLocation } from "wouter";
 import { Helmet } from "react-helmet";
-import { Product } from "@shared/schema";
+import { Product, ProductImage } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { Star, StarHalf, ArrowLeft } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
-
 const ProductDetails = () => {
   const params = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
   const productId = parseInt(params.id);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
-  const { data: product, isLoading, isError } = useQuery<Product>({
+  const { data: product, isLoading, isError } = useQuery<Product & { images: ProductImage[] }>({
     queryKey: [`/api/products/${productId}`],
   });
+
+  useEffect(() => {
+    if (product?.images) {
+      const primaryIndex = product.images.findIndex(img => img.is_primary);
+      setSelectedImageIndex(primaryIndex !== -1 ? primaryIndex : 0);
+    }
+  }, [product?.images]);
 
   if (isLoading) {
     return (
@@ -87,23 +95,33 @@ const ProductDetails = () => {
         <div className="grid md:grid-cols-2 gap-10">
           <div>
             <div className="bg-white p-4 rounded-lg shadow-md">
-              <img 
-                src={product.image} 
-                alt={product.name} 
-                className="w-full h-auto object-cover rounded-md"
-              />
-              
-              <div className="grid grid-cols-4 gap-3 mt-4">
-                <img 
-                  src={product.image} 
-                  alt={product.name} 
-                  className="w-full h-20 object-cover rounded border-2 border-primary cursor-pointer"
-                />
-                {/* Placeholder thumbnails - in a real app these would be additional product images */}
-                <div className="w-full h-20 rounded cursor-pointer opacity-60 hover:opacity-100 bg-gray-200"></div>
-                <div className="w-full h-20 rounded cursor-pointer opacity-60 hover:opacity-100 bg-gray-200"></div>
-                <div className="w-full h-20 rounded cursor-pointer opacity-60 hover:opacity-100 bg-gray-200"></div>
-              </div>
+              {product.images && product.images.length > 0 ? (
+                <>
+                  <img
+                    src={product.images[selectedImageIndex].display_url}
+                    alt={product.images[selectedImageIndex].alt_text || product.name}
+                    className="w-full h-[400px] object-cover rounded-md"
+                  />
+                  
+                  <div className="grid grid-cols-4 gap-3 mt-4">
+                    {product.images.map((image, index) => (
+                      <img
+                        key={image.id}
+                        src={image.thumb_url || image.display_url}
+                        alt={image.alt_text || `${product.name} image ${index + 1}`}
+                        className={`w-full h-20 object-cover rounded border-2 cursor-pointer transition-colors ${
+                          selectedImageIndex === index ? 'border-primary' : 'border-transparent hover:border-primary/50'
+                        }`}
+                        onClick={() => setSelectedImageIndex(index)}
+                      />
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="w-full h-64 bg-gray-200 rounded-lg flex items-center justify-center">
+                  <span className="text-gray-500">No images available</span>
+                </div>
+              )}
             </div>
           </div>
           
