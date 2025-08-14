@@ -19,8 +19,12 @@ interface ExtendedProduct extends InsertProduct {
 interface ProductFormData extends Omit<InsertProduct, 'category_id'> {
   image?: string;
   category?: string;
-  imageFiles?: File[];
+  imageFiles?: ImageData[];
+  rating: string;
+  review_count: number;
 }
+
+import { ImageData } from "@/lib/imgbb";
 
 interface ProductFormProps {
   initialData?: ExtendedProduct;
@@ -39,6 +43,8 @@ const ProductForm = ({ initialData, onSubmit, isLoading, categories, getAuthHead
     featured: initialData?.featured || false,
     bestseller: initialData?.bestseller || false,
     new_arrival: initialData?.new_arrival || false,
+    rating: initialData?.rating?.toString() || "0",
+    review_count: initialData?.review_count || 0,
     accuracy: initialData?.accuracy || "",
     power_supply: initialData?.power_supply || "",
     display: initialData?.display || "",
@@ -52,10 +58,10 @@ const ProductForm = ({ initialData, onSubmit, isLoading, categories, getAuthHead
     onSubmit(formData);
   };
 
-  const handleImagesChange = (files: File[]) => {
+  const handleImagesChange = (images: ImageData[]) => {
     setFormData(prev => ({
       ...prev,
-      imageFiles: files
+      imageFiles: images
     }));
   };
 
@@ -127,6 +133,33 @@ const ProductForm = ({ initialData, onSubmit, isLoading, categories, getAuthHead
             ))}
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="rating">Rating (0-5)</Label>
+          <Input
+            id="rating"
+            type="number"
+            min="0"
+            max="5"
+            step="0.1"
+            value={formData.rating || "0"}
+            onChange={(e) => setFormData({ ...formData, rating: e.target.value || "0" })}
+            required
+          />
+        </div>
+        <div>
+          <Label htmlFor="review_count">Number of Reviews</Label>
+          <Input
+            id="review_count"
+            type="number"
+            min="0"
+            value={formData.review_count || 0}
+            onChange={(e) => setFormData({ ...formData, review_count: parseInt(e.target.value) || 0 })}
+            required
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

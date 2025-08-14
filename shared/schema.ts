@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, varchar, foreignKey } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, varchar, foreignKey, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -78,6 +78,8 @@ export const products = pgTable("products", {
   featured: boolean("featured").default(false),
   bestseller: boolean("bestseller").default(false),
   new_arrival: boolean("new_arrival").default(false),
+  rating: decimal("rating", { precision: 3, scale: 1 }).default("0"),  // Rating out of 5 with one decimal place
+  review_count: integer("review_count").default(0),
   accuracy: text("accuracy"),
   power_supply: text("power_supply"),
   display: text("display"),

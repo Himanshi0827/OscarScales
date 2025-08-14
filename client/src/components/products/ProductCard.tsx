@@ -20,9 +20,10 @@ const ProductImage = ({ productId }: { productId: number }) => {
   );
 };
 import { Button } from "@/components/ui/button";
-interface ExtendedProduct extends Product {
+interface ExtendedProduct extends Omit<Product, 'rating'> {
   image?: string;
   category?: string;
+  rating: string | null;
 }
 
 type ProductCardProps = {
@@ -31,18 +32,8 @@ type ProductCardProps = {
 };
 
 const ProductCard = ({ product, onViewDetails }: ProductCardProps) => {
-  // Mock rating for display purposes - in a real app this would come from a database
-  const getRandomRating = () => {
-    const ratings = [4, 4.5, 5];
-    return ratings[Math.floor(Math.random() * ratings.length)];
-  };
-  
-  const getRandomReviewCount = () => {
-    return Math.floor(Math.random() * 150) + 20;
-  };
-  
-  const rating = getRandomRating();
-  const reviewCount = getRandomReviewCount();
+  const rating = product.rating ? parseFloat(product.rating) : 0;
+  const reviewCount = product.review_count ?? 0;
 
   const renderStars = (rating: number) => {
     const stars = [];

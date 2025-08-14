@@ -52,6 +52,8 @@ export async function runMigrations() {
         featured BOOLEAN DEFAULT false,
         bestseller BOOLEAN DEFAULT false,
         new_arrival BOOLEAN DEFAULT false,
+        rating DECIMAL(3,1) DEFAULT '0',
+        review_count INTEGER DEFAULT 0,
         accuracy TEXT,
         power_supply TEXT,
         display TEXT,
