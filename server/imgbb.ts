@@ -135,14 +135,23 @@ export class ImgBBService {
 // Create and export a function to get the ImgBB service instance
 let instance: ImgBBService | null = null;
 
-export function getImgBBService(apiKey?: string): ImgBBService {
+export function getImgBBService(apiKey?: string): ImgBBService | null {
   if (!instance) {
-    instance = new ImgBBService(apiKey);
+    try {
+      instance = new ImgBBService(apiKey);
+    } catch (error) {
+      console.warn('ImgBB service not initialized. Image-related features will be disabled.');
+      return null;
+    }
   }
   return instance;
 }
 
 // Export a function to initialize the service
 export function initImgBBService(apiKey?: string): void {
-  instance = new ImgBBService(apiKey);
+  try {
+    instance = new ImgBBService(apiKey);
+  } catch (error) {
+    console.warn('ImgBB service not initialized. Image-related features will be disabled.');
+  }
 }

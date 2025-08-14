@@ -248,17 +248,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // First store the message in database
       const message = await storage.createContactMessage(contactData);
       
-      // Then send emails
-      await sendContactEmail(message);
+      // Try to send emails, but don't fail if it doesn't work
+      try {
+        await sendContactEmail(message);
+      } catch (emailError) {
+        console.error('Email sending failed:', emailError);
+        // Continue execution even if email fails
+      }
       
-      res.status(201).json({ message: "Message sent successfully", data: message });
+      res.status(201).json({
+        message: "Message stored successfully",
+        data: message,
+        emailSent: false,
+        note: "Email sending is currently disabled. Message was stored in database."
+      });
     } catch (error) {
       if (error instanceof ZodError) {
         const validationError = fromZodError(error);
         return res.status(400).json({ message: validationError.message });
       }
       console.error('Contact form error:', error);
-      res.status(500).json({ message: "Failed to send message" });
+      res.status(500).json({ message: "Failed to store message" });
     }
   });
 
@@ -396,6 +406,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const imgbb = getImgBBService();
+      if (!imgbb) {
+        return res.status(500).json({ message: "Image upload service not available" });
+      }
+
       const base64Image = req.file.buffer.toString("base64");
       const response = await imgbb.uploadImage(base64Image, req.file.originalname);
 
@@ -414,6 +428,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const imgbb = getImgBBService();
+      if (!imgbb) {
+        return res.status(500).json({ message: "Image service not available" });
+      }
+
       const success = await imgbb.deleteImage(deleteUrl);
 
       if (success) {

@@ -72,7 +72,15 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  private imgbb = getImgBBService();
+  private imgbb: ReturnType<typeof getImgBBService> | null = null;
+
+  constructor() {
+    try {
+      this.imgbb = getImgBBService();
+    } catch (error) {
+      console.warn('ImgBB service not initialized. Image-related features will be disabled.');
+    }
+  }
 
   // Category methods
   async getCategories(): Promise<Category[]> {
@@ -353,23 +361,25 @@ export class DatabaseStorage implements IStorage {
         const imageBuffer = await fs.readFile(path.join(process.cwd(), 'public', categoryJson.image));
         const base64Image = imageBuffer.toString('base64');
 
-        // Upload to ImgBB
-        const imgbbResponse = await this.imgbb.uploadImage(
-          base64Image,
-          `category-${category.slug}`
-        );
+        if (this.imgbb) {
+          // Upload to ImgBB
+          const imgbbResponse = await this.imgbb.uploadImage(
+            base64Image,
+            `category-${category.slug}`
+          );
 
-        // Store ImgBB URLs in database
-        await db.insert(categoryImages).values({
-          category_id: category.id,
-          image_url: imgbbResponse.data.image.url,
-          display_url: imgbbResponse.data.display_url,
-          thumb_url: imgbbResponse.data.thumb.url,
-          delete_url: imgbbResponse.data.delete_url,
-          is_primary: true,
-          alt_text: category.name,
-          sort_order: 0
-        });
+          // Store ImgBB URLs in database
+          await db.insert(categoryImages).values({
+            category_id: category.id,
+            image_url: imgbbResponse.data.image.url,
+            display_url: imgbbResponse.data.display_url,
+            thumb_url: imgbbResponse.data.thumb.url,
+            delete_url: imgbbResponse.data.delete_url,
+            is_primary: true,
+            alt_text: category.name,
+            sort_order: 0
+          });
+        }
         console.log(`Successfully created category: ${category.name}`);
       } catch (error) {
         console.error(`Failed to create category image for ${category.name}:`, error);
@@ -407,25 +417,27 @@ export class DatabaseStorage implements IStorage {
             const imageBuffer = await fs.readFile(path.join(process.cwd(), 'public', image.image_url));
             const base64Image = imageBuffer.toString('base64');
 
-            // Upload to ImgBB
-            const imgbbResponse = await this.imgbb.uploadImage(
-              base64Image,
-              `product-${insertedProduct.id}-${image.sort_order}`
-            );
+            if (this.imgbb) {
+              // Upload to ImgBB
+              const imgbbResponse = await this.imgbb.uploadImage(
+                base64Image,
+                `product-${insertedProduct.id}-${image.sort_order}`
+              );
 
-            // Store ImgBB URLs in database
-            await db
-              .insert(productImages)
-              .values({
-                product_id: insertedProduct.id,
-                image_url: imgbbResponse.data.image.url,
-                display_url: imgbbResponse.data.display_url,
-                thumb_url: imgbbResponse.data.thumb.url,
-                delete_url: imgbbResponse.data.delete_url,
-                is_primary: image.is_primary,
-                alt_text: image.alt_text,
-                sort_order: image.sort_order
-              });
+              // Store ImgBB URLs in database
+              await db
+                .insert(productImages)
+                .values({
+                  product_id: insertedProduct.id,
+                  image_url: imgbbResponse.data.image.url,
+                  display_url: imgbbResponse.data.display_url,
+                  thumb_url: imgbbResponse.data.thumb.url,
+                  delete_url: imgbbResponse.data.delete_url,
+                  is_primary: image.is_primary,
+                  alt_text: image.alt_text,
+                  sort_order: image.sort_order
+                });
+            }
           } catch (error) {
             console.error(`Failed to upload image for product ${productData.name}:`, error);
             // Continue with next image
