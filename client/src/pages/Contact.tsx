@@ -23,7 +23,7 @@ const Contact = () => {
       <div className="container mx-auto px-4 py-12">
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <iframe 
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d248849.84916296526!2d77.6309395!3d12.9539974!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3bae1670c9b44e6d%3A0xf8dfc3e8517e4fe0!2sBengaluru%2C%20Karnataka!5e0!3m2!1sen!2sin!4v1688457098641!5m2!1sen!2sin" 
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1118.0808288653718!2d72.62829064577254!3d23.052205524926332!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x395e86a83fffffff%3A0x327f350797bff87a!2sOscar%20Digital%20System!5e1!3m2!1sen!2sin!4v1755608205805!5m2!1sen!2sin" 
             width="100%" 
             height="450" 
             style={{ border: 0 }} 

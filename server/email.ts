@@ -5,7 +5,8 @@ import { ContactMessage } from '@shared/schema';
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: 'oscardigicompany@gmail.com', // Company email from ContactSection
+    // user: 'oscardigicompany@gmail.com', // Company email from ContactSection
+    user: 'ronitshah350@gmail.com',
     pass: process.env.EMAIL_PASSWORD // Will be set via environment variable
   }
 });
@@ -13,8 +14,10 @@ const transporter = nodemailer.createTransport({
 export async function sendContactEmail(contact: ContactMessage) {
   // Email to company
   const companyMailOptions = {
-    from: 'oscardigicompany@gmail.com',
-    to: 'oscardigicompany@gmail.com',
+    // from: 'oscardigicompany@gmail.com',
+    from: 'ronitshah350@gmail.com',
+    // to: 'oscardigicompany@gmail.com',
+    to: 'ronitshah350@gmail.com',
     subject: `New Contact Form Submission: ${contact.subject}`,
     html: `
       <h2>New Contact Form Submission</h2>
@@ -29,7 +32,8 @@ export async function sendContactEmail(contact: ContactMessage) {
 
   // Auto-reply to customer
   const customerMailOptions = {
-    from: 'oscardigicompany@gmail.com',
+    // from: 'oscardigicompany@gmail.com',
+    from: 'ronitshah350@gmail.com',
     to: contact.email,
     subject: 'Thank you for contacting Oscar Digital Systems',
     html: `
