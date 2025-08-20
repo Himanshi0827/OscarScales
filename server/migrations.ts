@@ -5,21 +5,8 @@ export async function runMigrations() {
   console.log("Running database migrations...");
 
   try {
-    // Drop existing tables
-    console.log("Dropping existing tables...");
-    const dropTables = [
-      sql`DROP TABLE IF EXISTS product_images CASCADE`,
-      sql`DROP TABLE IF EXISTS category_images CASCADE`,
-      sql`DROP TABLE IF EXISTS products CASCADE`,
-      sql`DROP TABLE IF EXISTS categories CASCADE`
-    ];
-
-    for (const query of dropTables) {
-      await db.execute(query);
-    }
-
-    // Create tables in order
-    console.log("Creating tables...");
+    // Create tables if they don't exist
+    console.log("Ensuring tables exist...");
     const createTables = [
       sql`CREATE TABLE IF NOT EXISTS categories (
         id SERIAL PRIMARY KEY,

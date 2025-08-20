@@ -3,8 +3,8 @@ import bcrypt from 'bcryptjs';
 import { Request, Response, NextFunction } from 'express';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'oscar-digital-system-secret-key-2024';
-const ADMIN_USERNAME = 'admin';
-const ADMIN_PASSWORD_HASH = bcrypt.hashSync('password', 10);
+const ADMIN_USERNAME = 'ronit';
+const ADMIN_PASSWORD_HASH = bcrypt.hashSync('Ashish', 10);
 
 export interface AuthRequest extends Request {
   user?: { username: string };
