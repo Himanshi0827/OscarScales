@@ -9,8 +9,9 @@
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
+        "zeroConfig": true,
         "buildCommand": "vite build",
-        "outputDirectory": "dist/client"
+        "outputDirectory": "dist"
       }
     }
   ],
@@ -24,7 +25,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/dist/client/index.html"
+      "dest": "/index.html"
     }
   ]
 }

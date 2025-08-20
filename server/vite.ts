@@ -18,7 +18,12 @@ export function log(message: string, source = "express") {
 }
 
 export function serveStatic(app: Express) {
-  const distPath = path.join(__dirname, '..', 'dist', 'client');
+  // In production, Vercel handles static files
+  if (process.env.NODE_ENV === 'production') {
+    return;
+  }
+
+  const distPath = path.join(__dirname, '..', 'dist');
 
   log(`Serving static files from: ${distPath}`, "serveStatic");
 
@@ -30,7 +35,7 @@ export function serveStatic(app: Express) {
 
   app.use(express.static(distPath));
 
-  // fall through to index.html for SPA routing
+  // fall through to index.html for SPA routing in development
   app.use("*", (_req, res) => {
     log(`Fallback triggered for path: ${_req.originalUrl}`, "serveStatic");
     res.sendFile(path.resolve(distPath, "index.html"));
