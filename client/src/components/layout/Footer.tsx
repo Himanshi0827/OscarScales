@@ -1,16 +1,20 @@
 import { Link } from "wouter";
-import { 
-  Facebook, 
-  Twitter, 
-  Instagram, 
-  Linkedin, 
-  MapPin, 
-  Phone, 
-  Mail, 
-  Clock 
+import { useQuery } from "@tanstack/react-query";
+import { Category } from "@shared/schema";
+import {
+  Facebook,
+  Instagram,
+  MapPin,
+  Phone,
+  Mail,
+  Clock,
+  Loader2
 } from "lucide-react";
 
 const Footer = () => {
+  const { data: categories = [], isLoading, error } = useQuery<Category[]>({
+    queryKey: ["/api/categories"],
+  });
   const currentYear = new Date().getFullYear();
   
   return (
@@ -27,17 +31,11 @@ const Footer = () => {
               commercial, and industrial applications.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-neutral hover:text-white transition-colors">
+              <a href="https://facebook.com/oscardigital" target="_blank" rel="noopener noreferrer" className="text-neutral hover:text-white transition-colors">
                 <Facebook size={18} />
               </a>
-              <a href="#" className="text-neutral hover:text-white transition-colors">
-                <Twitter size={18} />
-              </a>
-              <a href="#" className="text-neutral hover:text-white transition-colors">
+              <a href="https://instagram.com/oscardigital" target="_blank" rel="noopener noreferrer" className="text-neutral hover:text-white transition-colors">
                 <Instagram size={18} />
-              </a>
-              <a href="#" className="text-neutral hover:text-white transition-colors">
-                <Linkedin size={18} />
               </a>
             </div>
           </div>
@@ -77,33 +75,28 @@ const Footer = () => {
           {/* Products */}
           <div>
             <h4 className="text-lg font-bold mb-4">Our Products</h4>
-            <ul className="space-y-2">
-              <li>
-                <Link href="/category/personal" className="text-neutral/80 hover:text-white transition-colors">
-                  Personal Scales
-                </Link>
-              </li>
-              <li>
-                <Link href="/category/jewelry" className="text-neutral/80 hover:text-white transition-colors">
-                  Jewelry Scales
-                </Link>
-              </li>
-              <li>
-                <Link href="/category/industrial" className="text-neutral/80 hover:text-white transition-colors">
-                  Industrial Scales
-                </Link>
-              </li>
-              <li>
-                <Link href="/category/dairy" className="text-neutral/80 hover:text-white transition-colors">
-                  Dairy Scales
-                </Link>
-              </li>
-              <li>
-                <Link href="/category/kitchen" className="text-neutral/80 hover:text-white transition-colors">
-                  Kitchen Scales
-                </Link>
-              </li>
-            </ul>
+            {isLoading ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : error ? (
+              <div className="text-center text-destructive py-4">
+                Failed to load categories
+              </div>
+            ) : (
+              <ul className="space-y-2">
+                {categories.map((category, idx) => (
+                  <li key={idx}>
+                    <Link
+                      href={category.href}
+                      className="text-neutral/80 hover:text-white transition-colors"
+                    >
+                      {category.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {/* Contact Info */}
@@ -113,16 +106,26 @@ const Footer = () => {
               <li className="flex items-start">
                 <MapPin className="mt-1 mr-3 text-secondary" size={18} />
                 <span className="text-neutral/80">
-                  123 Main Street, Tech Park, Bangalore - 560001, Karnataka, India
+                  Shayona Estate, memco cross road, Naroda Rd, Ahmedabad, Gujarat 382345
                 </span>
               </li>
               <li className="flex items-start">
                 <Phone className="mt-1 mr-3 text-secondary" size={18} />
-                <span className="text-neutral/80">+91 9876543210</span>
+                <span className="text-neutral/80">
+                  <a href="tel:+919945084452" className="hover:text-white transition-colors">+91 9879557391</a>
+                </span>
+              </li>
+              <li className="flex items-start">
+                <Phone className="mt-1 mr-3 text-secondary" size={18} />
+                <span className="text-neutral/80">
+                  <a href="tel:+919945084452" className="hover:text-white transition-colors">+91 9898993857</a>
+                </span>
               </li>
               <li className="flex items-start">
                 <Mail className="mt-1 mr-3 text-secondary" size={18} />
-                <span className="text-neutral/80">sales@oscardigital.com</span>
+                <span className="text-neutral/80">
+                  <a href="mailto:oscardigicompany@gmail.com" className="hover:text-white transition-colors">oscardigicompany@gmail.com</a>
+                </span>
               </li>
               <li className="flex items-start">
                 <Clock className="mt-1 mr-3 text-secondary" size={18} />
