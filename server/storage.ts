@@ -2,9 +2,6 @@ import { getImgBBService } from "./imgbb.js";
 import { promises as fs } from 'fs';
 import path from 'path';
 import {
-  users,
-  type User,
-  type InsertUser,
   products,
   type Product,
   type InsertProduct,
@@ -47,11 +44,6 @@ export interface IStorage {
   updateProductImage(id: number, data: Partial<ProductImage>): Promise<ProductImage | undefined>;
   deleteProductImage(id: number): Promise<boolean>;
 
-  // User methods
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
-  
   // Product methods
   getProducts(): Promise<Product[]>;
   getProductById(id: number): Promise<Product | undefined>;
@@ -242,25 +234,6 @@ export class DatabaseStorage implements IStorage {
     return result.length > 0;
   }
 
-  // User methods
-  async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
-  }
-
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
-  }
-
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(insertUser)
-      .returning();
-    return user;
-  }
-  
   // Product methods
   async getProducts(): Promise<Product[]> {
     return await db.select().from(products);

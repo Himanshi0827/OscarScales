@@ -2,18 +2,6 @@ import { pgTable, text, serial, integer, boolean, varchar, foreignKey, decimal }
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// User schema
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-});
-
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
-
 // Categories schema
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
@@ -107,9 +95,6 @@ export const insertContactMessageSchema = createInsertSchema(contactMessages).om
 });
 
 // Types
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
-
 export type InsertCategory = z.infer<typeof insertCategorySchema>;
 export type Category = typeof categories.$inferSelect;
 
