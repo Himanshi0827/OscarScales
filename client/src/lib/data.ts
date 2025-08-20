@@ -21,11 +21,6 @@ export const truncateText = (text: string, maxLength: number): string => {
   return text.substring(0, maxLength) + "...";
 };
 
-export const getProductImage = (product: Product): string => {
-  // In a real app, this might include fallback logic or image processing
-  return product.image;
-};
-
 export const getRandomRating = (): number => {
   const ratings = [4, 4.5, 5];
   return ratings[Math.floor(Math.random() * ratings.length)];

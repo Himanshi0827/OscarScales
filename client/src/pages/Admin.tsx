@@ -14,10 +14,12 @@ interface ExtendedProduct extends Product {
   images?: string[];
 }
 
+import { ImageData } from "@/lib/imgbb";
+
 interface ProductFormData extends Omit<InsertProduct, 'category_id'> {
   image?: string;
   category?: string;
-  imageFiles?: File[];
+  imageFiles?: ImageData[];
 }
 
 import { Button } from "@/components/ui/button";
@@ -179,20 +181,20 @@ const ProductsManagement = ({ getAuthHeaders }: { getAuthHeaders: () => Record<s
       if (!response.ok) throw new Error('Failed to add product');
       const product = await response.json();
 
-      // Then upload images if any
+      // Then save image data if any
       if (imageFiles?.length) {
-        const formData = new FormData();
-        imageFiles.forEach((file, index) => {
-          formData.append('images', file);
-          formData.append('is_primary', index === 0 ? 'true' : 'false');
-        });
+        const imageData = imageFiles.map((file, index) => ({
+          ...file,
+          is_primary: index === 0
+        }));
 
         const uploadResponse = await fetch(`/api/admin/products/${product.id}/images`, {
           method: 'POST',
           headers: {
-            'Authorization': getAuthHeaders().Authorization,
+            ...getAuthHeaders(),
+            'Content-Type': 'application/json'
           },
-          body: formData,
+          body: JSON.stringify(imageData),
         });
 
         if (!uploadResponse.ok) throw new Error('Failed to upload images');

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Category } from "@shared/schema";
+import { Category, CategoryImage as CategoryImageType } from "@shared/schema";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -123,15 +123,7 @@ const CategoriesSection = () => {
                         "scroll-snap-align-start"
                       )}
                     >
-                      <img
-                        src={
-                          category.image ||
-                          `https://via.placeholder.com/400x300.png?text=${encodeURIComponent(category.name)}`
-                        }
-                        alt={category.name}
-                        className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
-                        loading="lazy"
-                      />
+                      <CategoryImage categoryId={category.id} name={category.name} />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent z-10" />
                       <div className="absolute bottom-0 left-0 z-20 p-4 text-white">
                         <h3 className="text-xl font-semibold">{category.name}</h3>
@@ -146,6 +138,24 @@ const CategoriesSection = () => {
         </div>
       </div>
     </section>
+  );
+};
+
+// Component to handle category image display
+const CategoryImage = ({ categoryId, name }: { categoryId: number; name: string }) => {
+  const { data: images = [] } = useQuery<CategoryImageType[]>({
+    queryKey: [`/api/categories/${categoryId}/images`],
+  });
+
+  const primaryImage = images.find(img => img.is_primary) || images[0];
+  
+  return (
+    <img
+      src={primaryImage?.display_url || `https://via.placeholder.com/400x300.png?text=${encodeURIComponent(name)}`}
+      alt={name}
+      className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
+      loading="lazy"
+    />
   );
 };
 
