@@ -13,6 +13,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Request logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -41,17 +42,30 @@ app.use((req, res, next) => {
   next();
 });
 
-await runMigrations();
-await registerRoutes(app);
+// Initialize app (migrations and routes)
+let initialized = false;
+async function initialize() {
+  if (!initialized) {
+    await runMigrations();
+    await registerRoutes(app);
+    initialized = true;
+  }
+}
 
+// Error handling middleware
 app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-    res.status(status).json({ message });
+  const status = err.status || err.statusCode || 500;
+  const message = err.message || "Internal Server Error";
+  res.status(status).json({ message });
 });
 
-if (process.env.NODE_ENV !== "development") {
+// Serve static files in production
+if (process.env.NODE_ENV === "production") {
   serveStatic(app);
 }
 
-export default app;
+// Export the serverless handler
+export default async function handler(req: Request, res: Response) {
+  await initialize();
+  return app(req, res);
+}
