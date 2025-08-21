@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { ContactMessage } from '@shared/schema';
+import { ContactMessage } from '../shared/schema.js';
 
 // Create a transporter using Gmail SMTP
 const transporter = nodemailer.createTransport({

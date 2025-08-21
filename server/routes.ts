@@ -8,7 +8,7 @@ import {
   insertCategorySchema,
   insertCategoryImageSchema,
   insertProductImageSchema
-} from "@shared/schema";
+} from "../shared/schema.js";
 import { sendContactEmail } from "./email";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
