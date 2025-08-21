@@ -65,16 +65,16 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 // Serve static files in production
-if (process.env.NODE_ENV === "production") {
-  const publicPath = path.join(__dirname, '..', 'public');
-  app.use(express.static(publicPath));
+// if (process.env.NODE_ENV === "production") {
+//   const publicPath = path.join(__dirname, '..', 'public');
+//   app.use(express.static(publicPath));
   
-  // SPA Fallback: For any request that doesn't match a static file or an API route,
-  // send the index.html file. This is crucial for client-side routing.
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(publicPath, 'index.html'));
-  });
-}
+//   // SPA Fallback: For any request that doesn't match a static file or an API route,
+//   // send the index.html file. This is crucial for client-side routing.
+//   app.get("*", (req, res) => {
+//     res.sendFile(path.join(publicPath, 'index.html'));
+//   });
+// }
 // if (process.env.NODE_ENV === "production") {
 //   serveStatic(app);
 // }
