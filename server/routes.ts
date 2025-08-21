@@ -9,12 +9,12 @@ import {
   insertCategoryImageSchema,
   insertProductImageSchema
 } from "../shared/schema.js";
-import { sendContactEmail } from "./email";
+import { sendContactEmail } from "./email.js";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
-import { login, authenticateToken, verifyToken, AuthRequest } from "./auth";
+import { login, authenticateToken, verifyToken, AuthRequest } from "./auth.js";
 import multer from "multer";
-import { getImgBBService } from "./imgbb";
+import { getImgBBService } from "./imgbb.js";
 
 // Configure multer for handling file uploads
 const upload = multer({
