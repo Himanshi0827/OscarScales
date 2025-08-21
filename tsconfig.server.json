@@ -1,0 +1,13 @@
+// tsconfig.server.json
+{
+  "extends": "./tsconfig.json", // Assumes you have a base tsconfig.json
+  "compilerOptions": {
+    "noEmit": false, // <-- This is the most important change. Allows JS file generation.
+    "outDir": "./dist",
+    "rootDir": "./",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext"
+  },
+  "include": ["server/**/*.ts", "shared/**/*.ts"],
+  "exclude": ["node_modules", "client"]
+}
