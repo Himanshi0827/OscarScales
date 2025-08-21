@@ -5,9 +5,9 @@ import express, { type Request, Response, NextFunction } from "express";
 import path from "node:path"; // <-- Add this
 import { fileURLToPath } from "node:url"; // <-- Add this
 import { initImgBBService } from "./imgbb.js";
-import { registerRoutes } from "./routes";
-import { serveStatic, log } from "./vite";
-import { runMigrations } from "./migrations";
+import { registerRoutes } from "./routes.js";
+import { serveStatic, log } from "./vite.js";
+import { runMigrations } from "./migrations.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
