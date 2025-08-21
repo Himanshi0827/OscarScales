@@ -18,26 +18,28 @@ export function log(message: string, source = "express") {
 }
 
 export function serveStatic(app: Express) {
-  // In production, Vercel handles static files
-  if (process.env.NODE_ENV === 'production') {
+  // In production, let Vercel handle static files (never serve from Node)
+  if (process.env.NODE_ENV === "production") {
     return;
   }
 
-  const distPath = path.join(__dirname, '..', 'dist');
+  // Local development fallback
+  const distPath = path.join(__dirname, "..", "dist");
 
-  log(`Serving static files from: ${distPath}`, "serveStatic");
+  log(`Serving static files locally from: ${distPath}`, "serveStatic");
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
+      `Could not find the build directory: ${distPath}, make sure to run "npm run build"`
     );
   }
 
   app.use(express.static(distPath));
 
-  // fall through to index.html for SPA routing in development
+  // Fall back to index.html for SPA routing in dev
   app.use("*", (_req, res) => {
     log(`Fallback triggered for path: ${_req.originalUrl}`, "serveStatic");
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
+
