@@ -2,10 +2,15 @@ import { config } from "dotenv";
 config();
 
 import express, { type Request, Response, NextFunction } from "express";
+import path from "node:path"; // <-- Add this
+import { fileURLToPath } from "node:url"; // <-- Add this
 import { initImgBBService } from "./imgbb.js";
 import { registerRoutes } from "./routes";
 import { serveStatic, log } from "./vite";
 import { runMigrations } from "./migrations";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 initImgBBService();
 
@@ -61,8 +66,18 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 
 // Serve static files in production
 if (process.env.NODE_ENV === "production") {
-  serveStatic(app);
+  const publicPath = path.join(__dirname, '..', 'public');
+  app.use(express.static(publicPath));
+  
+  // SPA Fallback: For any request that doesn't match a static file or an API route,
+  // send the index.html file. This is crucial for client-side routing.
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(publicPath, 'index.html'));
+  });
 }
+// if (process.env.NODE_ENV === "production") {
+//   serveStatic(app);
+// }
 
 // Export the serverless handler
 export default async function handler(req: Request, res: Response) {
